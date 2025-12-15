@@ -7,10 +7,7 @@
 [build.environment]
   NODE_VERSION = "18"
 
-[[redirects]]
-  from = "/"
-  to = "/main.html"
-  status = 200
+# No redirect needed - index.html is the default landing page
 
 [[headers]]
   for = "/*"

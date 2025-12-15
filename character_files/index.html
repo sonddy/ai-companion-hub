@@ -1,1202 +1,837 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nicky - 3D AI Companion</title>
-  
-  <!-- Import maps for ES modules -->
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-      "@pixiv/three-vrm": "https://unpkg.com/@pixiv/three-vrm@2.1.0/lib/three-vrm.module.js"
-    }
-  }
-  </script>
-  
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Companion Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #050510;
-      --card: #0d0d1a;
-      --accent: #ff6b9d;
-      --accent-2: #66b3ff;
-      --text: #e8e8ff;
-      --muted: #9090c0;
-      --user-bg: #1a1a3a;
-      --nicky-bg: #cc4477;
+      --bg-deep: #0a0812;
+      --bg-mid: #150f1a;
+      --accent-pink: #ff6b9d;
+      --accent-cyan: #22d3ee;
+      --accent-purple: #b366ff;
+      --accent-gold: #ffb366;
+      --text: #e8e8f0;
+      --text-muted: #8888aa;
+      --glow-pink: rgba(255, 107, 157, 0.4);
+      --glow-cyan: rgba(34, 211, 238, 0.4);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background: radial-gradient(ellipse at center, #0a0a15 0%, #050510 50%, #020208 100%);
+      font-family: 'Rajdhani', sans-serif;
+      background: var(--bg-deep);
       color: var(--text);
-      overflow: hidden;
-      width: 100vw;
-      height: 100vh;
-    }
-    #app {
-      width: 100%;
-      height: 100%;
-      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
       position: relative;
     }
-    #canvas-container {
-      flex: 1;
-      position: relative;
-    }
-    #canvas-container canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-    .title-overlay {
-      position: absolute;
-      top: 30px;
-      left: 30px;
-      pointer-events: none;
-      z-index: 10;
-    }
-    .title-overlay h1 {
-      font-size: 48px;
-      font-weight: 800;
-      background: linear-gradient(135deg, #ff6b9d, #b366ff, #66b3ff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 8px;
-      text-shadow: 0 0 40px rgba(179, 102, 255, 0.4);
-    }
-    .title-overlay p {
-      font-size: 16px;
-      color: rgba(200, 200, 255, 0.6);
-    }
-    .loading-overlay {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-      z-index: 20;
-    }
-    .loading-overlay.hidden { display: none; }
-    .loading-text {
-      color: #ff6b9d;
-      font-size: 20px;
-      font-weight: 600;
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 0.5; }
-      50% { opacity: 1; }
-    }
-    
-    /* Chat Interface */
-    .chat-interface {
+
+    /* Animated starfield background */
+    .starfield {
       position: fixed;
-      right: 20px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 380px;
-      max-height: 80vh;
-      background: rgba(10, 10, 25, 0.9);
-      border: 1px solid rgba(102, 179, 255, 0.3);
-      border-radius: 16px;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      animation: twinkle var(--duration) ease-in-out infinite;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    /* Nebula gradient overlay */
+    .nebula {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      background: 
+        radial-gradient(ellipse at 20% 20%, rgba(179, 102, 255, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 30%, rgba(255, 107, 157, 0.1) 0%, transparent 40%),
+        radial-gradient(ellipse at 60% 80%, rgba(34, 211, 238, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 10% 90%, rgba(255, 179, 102, 0.08) 0%, transparent 40%);
+      pointer-events: none;
+    }
+
+    /* Grid lines effect */
+    .grid-lines {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      background-image: 
+        linear-gradient(rgba(255, 107, 157, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 107, 157, 0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      pointer-events: none;
+    }
+
+    /* Floating particles */
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: var(--accent-cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent-cyan), 0 0 20px var(--accent-cyan);
+      animation: float-up 15s linear infinite;
+      opacity: 0;
+    }
+
+    @keyframes float-up {
+      0% { transform: translateY(100vh) scale(0); opacity: 0; }
+      10% { opacity: 0.8; }
+      90% { opacity: 0.8; }
+      100% { transform: translateY(-100vh) scale(1); opacity: 0; }
+    }
+
+    /* Main container */
+    .container {
+      position: relative;
+      z-index: 10;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(102, 179, 255, 0.15), 0 0 80px rgba(255, 107, 157, 0.1);
-      backdrop-filter: blur(15px);
-      z-index: 100;
-    }
-    .chat-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid rgba(102, 179, 255, 0.2);
-      display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
     }
-    .chat-header h2 {
-      font-size: 18px;
-      font-weight: 600;
-      background: linear-gradient(90deg, #ff6b9d, #66b3ff);
+
+    /* Glowing border frame */
+    .frame {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      bottom: 20px;
+      border: 1px solid rgba(255, 107, 157, 0.2);
+      border-radius: 20px;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .frame::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: 50px;
+      right: 50px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-pink), transparent);
+    }
+
+    .frame::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 50px;
+      right: 50px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+    }
+
+    /* Corner accents */
+    .corner {
+      position: fixed;
+      width: 60px;
+      height: 60px;
+      z-index: 6;
+      pointer-events: none;
+    }
+
+    .corner::before, .corner::after {
+      content: '';
+      position: absolute;
+      background: var(--accent-pink);
+    }
+
+    .corner-tl { top: 20px; left: 20px; }
+    .corner-tl::before { top: 0; left: 0; width: 20px; height: 2px; }
+    .corner-tl::after { top: 0; left: 0; width: 2px; height: 20px; }
+
+    .corner-tr { top: 20px; right: 20px; }
+    .corner-tr::before { top: 0; right: 0; width: 20px; height: 2px; }
+    .corner-tr::after { top: 0; right: 0; width: 2px; height: 20px; }
+
+    .corner-bl { bottom: 20px; left: 20px; }
+    .corner-bl::before { bottom: 0; left: 0; width: 20px; height: 2px; }
+    .corner-bl::after { bottom: 0; left: 0; width: 2px; height: 20px; }
+
+    .corner-br { bottom: 20px; right: 20px; }
+    .corner-br::before { bottom: 0; right: 0; width: 20px; height: 2px; }
+    .corner-br::after { bottom: 0; right: 0; width: 2px; height: 20px; }
+
+    /* Welcome section */
+    .welcome {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .welcome-tag {
+      font-family: 'Orbitron', monospace;
+      font-size: 12px;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      color: var(--accent-cyan);
+      margin-bottom: 20px;
+      opacity: 0;
+      animation: fade-in 1s ease forwards 0.5s;
+    }
+
+    .welcome h1 {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(32px, 6vw, 72px);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #fff 0%, var(--accent-pink) 50%, var(--accent-purple) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      text-shadow: 0 0 60px var(--glow-pink);
+      opacity: 0;
+      animation: fade-in 1s ease forwards 0.7s;
     }
-    .status {
-      font-size: 12px;
-      color: #66ffb3;
+
+    .welcome h2 {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(18px, 3vw, 28px);
+      font-weight: 400;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      opacity: 0;
+      animation: fade-in 1s ease forwards 0.9s;
     }
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      max-height: 350px;
+
+    .welcome .subtitle {
+      font-size: 18px;
+      color: var(--accent-gold);
+      margin-top: 30px;
+      font-weight: 500;
+      letter-spacing: 1px;
+      opacity: 0;
+      animation: fade-in 1s ease forwards 1.1s;
     }
-    .message {
-      padding: 12px 16px;
-      border-radius: 12px;
-      max-width: 85%;
-      animation: fadeIn 0.3s ease;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
+
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .message.user {
-      background: linear-gradient(135deg, #1a2a4a, #2a3d6e);
-      align-self: flex-end;
-      border-bottom-right-radius: 4px;
-      border: 1px solid rgba(102, 179, 255, 0.2);
+
+    /* Decorative line */
+    .divider {
+      width: 200px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent-pink), var(--accent-cyan), transparent);
+      margin: 40px auto;
+      position: relative;
+      opacity: 0;
+      animation: fade-in 1s ease forwards 1.3s;
     }
-    .message.nicky {
-      background: linear-gradient(135deg, #4a1a3d, #cc4477);
-      align-self: flex-start;
-      border-bottom-left-radius: 4px;
-      border: 1px solid rgba(255, 107, 157, 0.2);
+
+    .divider::before {
+      content: '◇';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      color: var(--accent-pink);
+      background: var(--bg-deep);
+      padding: 0 15px;
+      font-size: 14px;
     }
-    .message-label {
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.6);
-      margin-bottom: 4px;
+
+    /* Model selection grid */
+    .models-section {
+      opacity: 0;
+      animation: fade-in 1s ease forwards 1.5s;
+    }
+
+    .models-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 14px;
+      letter-spacing: 4px;
       text-transform: uppercase;
+      color: var(--accent-cyan);
+      text-align: center;
+      margin-bottom: 40px;
     }
-    .message-text {
-      line-height: 1.5;
-      font-size: 14px;
+
+    .models-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+      max-width: 1200px;
+      width: 100%;
     }
-    .typing-indicator {
-      display: flex;
-      gap: 4px;
-      padding: 4px 0;
-    }
-    .typing-indicator span {
-      width: 8px;
-      height: 8px;
-      background: linear-gradient(135deg, #ff6b9d, #b366ff, #66b3ff);
-      border-radius: 50%;
-      animation: bounce 1.4s infinite ease-in-out;
-    }
-    .typing-indicator span:nth-child(1) { animation-delay: 0s; }
-    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes bounce {
-      0%, 80%, 100% { transform: translateY(0); }
-      40% { transform: translateY(-6px); }
-    }
-    .chat-input-area {
-      padding: 16px;
-      border-top: 1px solid rgba(255, 179, 102, 0.2);
-      display: flex;
-      gap: 10px;
-    }
-    .chat-input-area input {
-      flex: 1;
-      padding: 12px 16px;
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text);
-      font-size: 14px;
-      outline: none;
-      font-family: inherit;
-    }
-    .chat-input-area input:focus {
-      border-color: #b366ff;
-      box-shadow: 0 0 0 3px rgba(179, 102, 255, 0.2);
-    }
-    button {
-      padding: 12px 20px;
-      border-radius: 10px;
-      border: none;
-      background: linear-gradient(135deg, #ff6b9d, #b366ff, #66b3ff);
-      color: #050510;
-      font-weight: 700;
-      font-size: 14px;
+
+    /* Model card */
+    .model-card {
+      position: relative;
+      background: linear-gradient(135deg, rgba(21, 15, 26, 0.9) 0%, rgba(10, 8, 18, 0.95) 100%);
+      border: 1px solid rgba(255, 107, 157, 0.2);
+      border-radius: 20px;
+      padding: 30px;
       cursor: pointer;
-      transition: transform 0.1s, box-shadow 0.2s;
-      box-shadow: 0 4px 15px rgba(179, 102, 255, 0.3), 0 0 20px rgba(102, 179, 255, 0.2);
-      font-family: inherit;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      overflow: hidden;
+      text-decoration: none;
+      color: inherit;
+      display: block;
     }
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 25px rgba(179, 102, 255, 0.5), 0 0 30px rgba(102, 179, 255, 0.3);
+
+    .model-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, var(--glow-pink), var(--glow-cyan));
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      border-radius: 20px;
+      z-index: -1;
     }
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
+
+    .model-card:hover {
+      transform: translateY(-10px) scale(1.02);
+      border-color: var(--accent-pink);
+      box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.4),
+        0 0 30px var(--glow-pink),
+        inset 0 0 30px rgba(255, 107, 157, 0.05);
     }
-    .chat-controls {
-      padding: 0 16px 16px;
-      display: flex;
-      gap: 10px;
-      justify-content: center;
+
+    .model-card:hover::before {
+      opacity: 0.1;
     }
-    .chat-controls button {
-      background: rgba(255, 255, 255, 0.1);
-      color: var(--text);
-      box-shadow: none;
-      padding: 8px 16px;
-      font-size: 12px;
+
+    .model-card .status {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-family: 'Orbitron', monospace;
     }
-    .mic-btn {
-      padding: 12px 16px;
-      font-size: 18px;
-      background: linear-gradient(135deg, #ff6b9d, #b366ff);
+
+    .status.online {
+      background: rgba(34, 211, 238, 0.2);
+      color: var(--accent-cyan);
+      border: 1px solid var(--accent-cyan);
+    }
+
+    .status.coming-soon {
+      background: rgba(136, 136, 170, 0.2);
+      color: var(--text-muted);
+      border: 1px solid var(--text-muted);
+    }
+
+    .model-avatar {
+      width: 100px;
+      height: 100px;
       border-radius: 50%;
-      width: 48px;
-      height: 48px;
+      background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+      margin: 0 auto 20px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s ease;
+      font-size: 40px;
+      box-shadow: 0 0 30px var(--glow-pink);
+      position: relative;
+      overflow: hidden;
     }
-    .mic-btn:hover {
-      transform: scale(1.1);
+
+    .model-avatar::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      animation: shine 3s infinite;
     }
-    .mic-btn.recording {
-      background: linear-gradient(135deg, #ff3366, #ff6699);
-      animation: mic-pulse 1s ease-in-out infinite;
-      box-shadow: 0 0 20px rgba(255, 51, 102, 0.6);
+
+    @keyframes shine {
+      0% { transform: translateX(-100%) rotate(45deg); }
+      100% { transform: translateX(100%) rotate(45deg); }
     }
-    @keyframes mic-pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.1); }
+
+    .model-name {
+      font-family: 'Orbitron', monospace;
+      font-size: 24px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #fff, var(--accent-pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
-    .chat-messages::-webkit-scrollbar { width: 6px; }
-    .chat-messages::-webkit-scrollbar-track { background: rgba(102, 179, 255, 0.1); border-radius: 3px; }
-    .chat-messages::-webkit-scrollbar-thumb { background: rgba(179, 102, 255, 0.5); border-radius: 3px; }
-    
-    @media (max-width: 900px) {
-      .chat-interface {
-        right: 10px;
-        left: 10px;
-        width: auto;
-        top: auto;
-        bottom: 10px;
-        transform: none;
-        max-height: 50vh;
+
+    .model-type {
+      font-size: 12px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent-cyan);
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .model-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .model-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .feature-tag {
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 12px;
+      background: rgba(255, 107, 157, 0.1);
+      color: var(--accent-pink);
+      border: 1px solid rgba(255, 107, 157, 0.3);
+    }
+
+    .model-card.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    /* Enter button on hover */
+    .enter-btn {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      font-family: 'Orbitron', monospace;
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 10px 30px;
+      background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+      border: none;
+      border-radius: 25px;
+      color: white;
+      cursor: pointer;
+    }
+
+    .model-card:hover .enter-btn {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 60px;
+      text-align: center;
+      opacity: 0;
+      animation: fade-in 1s ease forwards 1.7s;
+    }
+
+    .footer p {
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+    }
+
+    .footer .version {
+      font-family: 'Orbitron', monospace;
+      color: var(--accent-cyan);
+    }
+
+
+    /* Responsive - Tablet */
+    @media (max-width: 768px) {
+      .models-grid {
+        grid-template-columns: 1fr;
+        padding: 0 10px;
+        gap: 20px;
       }
-      .title-overlay h1 { font-size: 32px; }
+      
+      .corner { display: none; }
+      .frame { display: none; }
+      
+      .welcome {
+        margin-bottom: 40px;
+      }
+      
+      .welcome h1 {
+        font-size: 36px;
+      }
+      
+      .welcome h2 {
+        font-size: 16px;
+      }
+      
+      .container {
+        padding: 20px 15px;
+      }
+    }
+
+    /* Responsive - Mobile */
+    @media (max-width: 480px) {
+      .container {
+        padding: 15px 10px;
+      }
+      
+      .welcome {
+        margin-bottom: 30px;
+      }
+      
+      .welcome-tag {
+        font-size: 10px;
+        letter-spacing: 3px;
+      }
+      
+      .welcome h1 {
+        font-size: 28px;
+      }
+      
+      .welcome h2 {
+        font-size: 14px;
+        letter-spacing: 1px;
+      }
+      
+      .welcome .subtitle {
+        font-size: 14px;
+        margin-top: 20px;
+      }
+      
+      .divider {
+        width: 150px;
+        margin: 25px auto;
+      }
+      
+      .models-title {
+        font-size: 11px;
+        letter-spacing: 2px;
+        margin-bottom: 25px;
+      }
+      
+      .models-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        padding: 0 5px;
+      }
+      
+      .model-card {
+        padding: 20px 15px;
+        border-radius: 15px;
+      }
+      
+      .model-card .status {
+        top: 12px;
+        right: 12px;
+        font-size: 8px;
+        padding: 4px 8px;
+      }
+      
+      .model-avatar {
+        width: 70px;
+        height: 70px;
+        font-size: 28px;
+        margin-bottom: 15px;
+      }
+      
+      .model-name {
+        font-size: 20px;
+      }
+      
+      .model-type {
+        font-size: 10px;
+        letter-spacing: 2px;
+        margin-bottom: 10px;
+      }
+      
+      .model-desc {
+        font-size: 12px;
+        line-height: 1.5;
+        margin-bottom: 15px;
+      }
+      
+      .model-features {
+        gap: 5px;
+      }
+      
+      .feature-tag {
+        font-size: 8px;
+        padding: 3px 8px;
+      }
+      
+      .enter-btn {
+        font-size: 10px;
+        padding: 8px 20px;
+        bottom: 15px;
+      }
+      
+      .footer {
+        margin-top: 40px;
+      }
+      
+      .footer p {
+        font-size: 10px;
+      }
+      
+      /* Always show enter button on mobile (no hover) */
+      .model-card:not(.disabled) .enter-btn {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+        position: relative;
+        bottom: auto;
+        left: auto;
+        transform: none;
+        display: block;
+        width: fit-content;
+        margin: 15px auto 0;
+      }
+      
+      /* Reduce stars on mobile for performance */
+      .grid-lines {
+        background-size: 30px 30px;
+      }
+    }
+
+    /* Touch-friendly improvements */
+    @media (hover: none) and (pointer: coarse) {
+      .model-card:not(.disabled) .enter-btn {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+        position: relative;
+        bottom: auto;
+        left: auto;
+        transform: none;
+        display: block;
+        width: fit-content;
+        margin: 15px auto 0;
+      }
+      
+      .model-card:active {
+        transform: scale(0.98);
+      }
+    }
+
+    /* Safe area for notched phones */
+    @supports (padding: max(0px)) {
+      .container {
+        padding-left: max(15px, env(safe-area-inset-left));
+        padding-right: max(15px, env(safe-area-inset-right));
+        padding-bottom: max(20px, env(safe-area-inset-bottom));
+      }
     }
   </style>
 </head>
 <body>
-  <div id="app">
-    <div id="canvas-container">
-      <div class="title-overlay">
-        <h1>Nicky</h1>
-        <p>Your 3D AI Companion</p>
-      </div>
-      <div class="loading-overlay" id="loading">
-        <div class="loading-text">Loading Nicky...</div>
+  <!-- Starfield background -->
+  <div class="starfield" id="starfield"></div>
+  
+  <!-- Nebula overlay -->
+  <div class="nebula"></div>
+  
+  <!-- Grid lines -->
+  <div class="grid-lines"></div>
+  
+  <!-- Floating particles -->
+  <div class="particles" id="particles"></div>
+  
+  <!-- Decorative frame -->
+  <div class="frame"></div>
+  <div class="corner corner-tl"></div>
+  <div class="corner corner-tr"></div>
+  <div class="corner corner-bl"></div>
+  <div class="corner corner-br"></div>
+  
+
+  <!-- Main content -->
+  <div class="container">
+    <div class="welcome">
+      <div class="welcome-tag">◈ System Online ◈</div>
+      <h1>WELCOME</h1>
+      <h2>Your Ultimate AI Companion</h2>
+      <p class="subtitle">Choose Your Model</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="models-section">
+      <div class="models-title">◇ Available Companions ◇</div>
+      
+      <div class="models-grid">
+        <!-- Nicky Card -->
+        <a href="nicky.html" class="model-card">
+          <span class="status online">● Online</span>
+          <div class="model-avatar">💖</div>
+          <div class="model-name">NICKY</div>
+          <div class="model-type">Companion AI</div>
+          <div class="model-desc">Your flirty, playful AI companion. She'll chat, tease, and keep you company with her charming personality.</div>
+          <div class="model-features">
+            <span class="feature-tag">Voice Chat</span>
+            <span class="feature-tag">3D Avatar</span>
+            <span class="feature-tag">Interactive</span>
+            <span class="feature-tag">Flirty</span>
+          </div>
+          <div class="enter-btn">Enter →</div>
+        </a>
+
+        <!-- Luna Card -->
+        <a href="luna.html" class="model-card">
+          <span class="status online">● Online</span>
+          <div class="model-avatar" style="background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));">🌟</div>
+          <div class="model-name">LUNA</div>
+          <div class="model-type">Assistant AI</div>
+          <div class="model-desc">Your sweet, cheerful AI assistant. Friendly, helpful, and always happy to support you with anything!</div>
+          <div class="model-features">
+            <span class="feature-tag">Voice Chat</span>
+            <span class="feature-tag">3D Avatar</span>
+            <span class="feature-tag">Friendly</span>
+            <span class="feature-tag">Helpful</span>
+          </div>
+          <div class="enter-btn">Enter →</div>
+        </a>
+
+        <!-- Oracle - Astrology AI -->
+        <a href="oracle.html" class="model-card">
+          <span class="status online">● Online</span>
+          <div class="model-avatar" style="background: linear-gradient(135deg, #9966ff, #cc66ff);">🔮</div>
+          <div class="model-name">ORACLE</div>
+          <div class="model-type">Mystic AI</div>
+          <div class="model-desc">Your spiritual guide. Astrology readings, numerology insights, tarot wisdom, and cosmic guidance.</div>
+          <div class="model-features">
+            <span class="feature-tag">Astrology</span>
+            <span class="feature-tag">Numerology</span>
+            <span class="feature-tag">Tarot</span>
+            <span class="feature-tag">Spiritual</span>
+          </div>
+          <div class="enter-btn">Enter →</div>
+        </a>
+
+        <!-- Cypher - Crypto AI -->
+        <div class="model-card disabled">
+          <span class="status coming-soon">Coming Soon</span>
+          <div class="model-avatar" style="background: linear-gradient(135deg, #00d4aa, #00ff88);">₿</div>
+          <div class="model-name">CYPHER</div>
+          <div class="model-type">Crypto Analyst AI</div>
+          <div class="model-desc">Your expert crypto analyst. Real-time Solana token data, DexScreener analytics, and deep blockchain insights.</div>
+          <div class="model-features">
+            <span class="feature-tag">Live Data</span>
+            <span class="feature-tag">Solana</span>
+            <span class="feature-tag">DexScreener</span>
+            <span class="feature-tag">Analytics</span>
+          </div>
+        </div>
+
+        <!-- Muse - Arts & Music AI -->
+        <div class="model-card disabled">
+          <span class="status coming-soon">Coming Soon</span>
+          <div class="model-avatar" style="background: linear-gradient(135deg, #ff6699, #ff9966);">🎨</div>
+          <div class="model-name">MUSE</div>
+          <div class="model-type">Creative AI</div>
+          <div class="model-desc">Your creative companion. Art history, music theory, creative inspiration, and artistic guidance.</div>
+          <div class="model-features">
+            <span class="feature-tag">Art</span>
+            <span class="feature-tag">Music</span>
+            <span class="feature-tag">Creative</span>
+            <span class="feature-tag">Inspiration</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="chat-interface">
-      <div class="chat-header">
-        <h2>Chat with Nicky</h2>
-        <span class="status" id="status">Ready to chat!</span>
-      </div>
-      <div class="chat-messages" id="chatMessages">
-        <div class="message nicky">
-          <div class="message-label">Nicky</div>
-          <div class="message-text">Hey there, sweetheart... I'm Nicky. Ask me anything you want. 😏</div>
-        </div>
-      </div>
-      <div class="chat-input-area">
-        <input type="text" id="userInput" placeholder="Ask Nicky anything..." autofocus />
-        <button id="micBtn" class="mic-btn" title="Hold to talk">🎤</button>
-        <button id="sendBtn">Send</button>
-          </div>
-      <div class="chat-controls">
-        <button id="stopBtn">Stop</button>
-        <button id="clearBtn">Clear</button>
-      </div>
+    <div class="footer">
+      <p>AI Companion Hub <span class="version">v1.0.0</span></p>
     </div>
   </div>
 
-  <audio id="player" hidden></audio>
+  <script>
+    // Generate starfield
+    const starfield = document.getElementById('starfield');
+    const starColors = ['#ffffff', '#ff6b9d', '#22d3ee', '#b366ff', '#ffb366'];
+    
+    for (let i = 0; i < 200; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.left = Math.random() * 100 + '%';
+      star.style.top = Math.random() * 100 + '%';
+      star.style.width = star.style.height = Math.random() * 3 + 1 + 'px';
+      star.style.background = starColors[Math.floor(Math.random() * starColors.length)];
+      star.style.boxShadow = `0 0 ${Math.random() * 10 + 5}px ${star.style.background}`;
+      star.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+      star.style.animationDelay = Math.random() * 5 + 's';
+      starfield.appendChild(star);
+    }
 
-  <script type="module">
-    import * as THREE from 'three';
-    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+    // Generate floating particles
+    const particles = document.getElementById('particles');
+    const particleColors = ['#ff6b9d', '#22d3ee', '#b366ff'];
     
-    const CHAT_ENDPOINT = '/.netlify/functions/nicky-chat';
-    const VRM_PATH = 'models/nicky.vrm';
-    
-    // State
-    let vrm = null;
-    let isTalking = false;
-    let clock = new THREE.Clock();
-    
-    // DOM elements
-    const container = document.getElementById('canvas-container');
-    const loading = document.getElementById('loading');
-    const chatMessages = document.getElementById('chatMessages');
-    const userInput = document.getElementById('userInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const statusEl = document.getElementById('status');
-    const player = document.getElementById('player');
-    
-    // Three.js setup
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x050510); // Deep space black
-    
-    const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
-    camera.position.set(0, 0.5, 5);
-    
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.shadowMap.enabled = true;
-    container.appendChild(renderer.domElement);
-    
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-    scene.add(ambientLight);
-    
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1);
-    dirLight1.position.set(5, 5, 5);
-    dirLight1.castShadow = true;
-    scene.add(dirLight1);
-    
-    const dirLight2 = new THREE.DirectionalLight(0xff6b9d, 0.5);
-    dirLight2.position.set(-5, 5, -5);
-    scene.add(dirLight2);
-    
-    const pointLight = new THREE.PointLight(0xffb366, 0.8);
-    pointLight.position.set(0, 2, 3);
-    scene.add(pointLight);
-    
-    // Add subtle pink rim light
-    const rimLight = new THREE.DirectionalLight(0xff6b9d, 0.3);
-    rimLight.position.set(0, 3, -3);
-    scene.add(rimLight);
-    
-    // Add cosmic platform floor
-    const floorGeometry = new THREE.CircleGeometry(4, 64);
-    const floorMaterial = new THREE.MeshStandardMaterial({
-      color: 0x1a1a3a,
-      transparent: true,
-      opacity: 0.4,
-      metalness: 0.8,
-      roughness: 0.2,
-      emissive: 0x0a0a20,
-      emissiveIntensity: 0.3
-    });
-    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -2.2;
-    floor.receiveShadow = true;
-    scene.add(floor);
-    
-    // Add glowing cosmic ring around Nicky
-    const ringGeometry = new THREE.RingGeometry(1.5, 1.7, 64);
-    const ringMaterial = new THREE.MeshBasicMaterial({
-      color: 0xb366ff,
-      transparent: true,
-      opacity: 0.4,
-      side: THREE.DoubleSide
-    });
-    const ring = new THREE.Mesh(ringGeometry, ringMaterial);
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.y = -2.15;
-    scene.add(ring);
-    
-    // Add outer cosmic ring
-    const outerRingGeometry = new THREE.RingGeometry(2.5, 2.6, 64);
-    const outerRingMaterial = new THREE.MeshBasicMaterial({
-      color: 0x66b3ff,
-      transparent: true,
-      opacity: 0.2,
-      side: THREE.DoubleSide
-    });
-    const outerRing = new THREE.Mesh(outerRingGeometry, outerRingMaterial);
-    outerRing.rotation.x = -Math.PI / 2;
-    outerRing.position.y = -2.18;
-    scene.add(outerRing);
-    
-    // UNIVERSE STARFIELD - Multiple colored star layers
-    const starColors = [
-      0xffffff,  // White stars
-      0xff6b9d,  // Pink stars
-      0xffb366,  // Orange/gold stars
-      0x66b3ff,  // Blue stars
-      0xb366ff,  // Purple stars
-      0x66ffb3,  // Cyan/teal stars
-      0xffff66,  // Yellow stars
-    ];
-    
-    // Create multiple star layers
-    const starLayers = [];
-    
-    // Layer 1: Distant small stars (background)
-    const starCount1 = 800;
-    const starGeometry1 = new THREE.BufferGeometry();
-    const starPositions1 = new Float32Array(starCount1 * 3);
-    const starColors1 = new Float32Array(starCount1 * 3);
-    for (let i = 0; i < starCount1; i++) {
-      const i3 = i * 3;
-      // Spread stars in a sphere around the scene
-      const radius = 30 + Math.random() * 50;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      starPositions1[i3] = radius * Math.sin(phi) * Math.cos(theta);
-      starPositions1[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-      starPositions1[i3 + 2] = radius * Math.cos(phi);
-      // Random color
-      const color = new THREE.Color(starColors[Math.floor(Math.random() * starColors.length)]);
-      starColors1[i3] = color.r;
-      starColors1[i3 + 1] = color.g;
-      starColors1[i3 + 2] = color.b;
+    for (let i = 0; i < 20; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.background = particleColors[Math.floor(Math.random() * particleColors.length)];
+      particle.style.boxShadow = `0 0 10px ${particle.style.background}, 0 0 20px ${particle.style.background}`;
+      particle.style.animationDelay = Math.random() * 15 + 's';
+      particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+      particles.appendChild(particle);
     }
-    starGeometry1.setAttribute('position', new THREE.BufferAttribute(starPositions1, 3));
-    starGeometry1.setAttribute('color', new THREE.BufferAttribute(starColors1, 3));
-    const starMaterial1 = new THREE.PointsMaterial({
-      size: 0.15,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.9
-    });
-    const stars1 = new THREE.Points(starGeometry1, starMaterial1);
-    scene.add(stars1);
-    starLayers.push(stars1);
-    
-    // Layer 2: Medium stars (mid-ground)
-    const starCount2 = 400;
-    const starGeometry2 = new THREE.BufferGeometry();
-    const starPositions2 = new Float32Array(starCount2 * 3);
-    const starColors2 = new Float32Array(starCount2 * 3);
-    for (let i = 0; i < starCount2; i++) {
-      const i3 = i * 3;
-      const radius = 15 + Math.random() * 25;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      starPositions2[i3] = radius * Math.sin(phi) * Math.cos(theta);
-      starPositions2[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-      starPositions2[i3 + 2] = radius * Math.cos(phi);
-      const color = new THREE.Color(starColors[Math.floor(Math.random() * starColors.length)]);
-      starColors2[i3] = color.r;
-      starColors2[i3 + 1] = color.g;
-      starColors2[i3 + 2] = color.b;
-    }
-    starGeometry2.setAttribute('position', new THREE.BufferAttribute(starPositions2, 3));
-    starGeometry2.setAttribute('color', new THREE.BufferAttribute(starColors2, 3));
-    const starMaterial2 = new THREE.PointsMaterial({
-      size: 0.08,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.8
-    });
-    const stars2 = new THREE.Points(starGeometry2, starMaterial2);
-    scene.add(stars2);
-    starLayers.push(stars2);
-    
-    // Layer 3: Close twinkling stars
-    const starCount3 = 150;
-    const starGeometry3 = new THREE.BufferGeometry();
-    const starPositions3 = new Float32Array(starCount3 * 3);
-    const starColors3 = new Float32Array(starCount3 * 3);
-    for (let i = 0; i < starCount3; i++) {
-      const i3 = i * 3;
-      starPositions3[i3] = (Math.random() - 0.5) * 20;
-      starPositions3[i3 + 1] = Math.random() * 10 - 2;
-      starPositions3[i3 + 2] = (Math.random() - 0.5) * 20 - 5;
-      const color = new THREE.Color(starColors[Math.floor(Math.random() * starColors.length)]);
-      starColors3[i3] = color.r;
-      starColors3[i3 + 1] = color.g;
-      starColors3[i3 + 2] = color.b;
-    }
-    starGeometry3.setAttribute('position', new THREE.BufferAttribute(starPositions3, 3));
-    starGeometry3.setAttribute('color', new THREE.BufferAttribute(starColors3, 3));
-    const starMaterial3 = new THREE.PointsMaterial({
-      size: 0.05,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.7
-    });
-    const stars3 = new THREE.Points(starGeometry3, starMaterial3);
-    scene.add(stars3);
-    starLayers.push(stars3);
-    
-    // Nebula clouds - colored fog patches
-    const nebulaGeometry = new THREE.PlaneGeometry(60, 60);
-    const nebulaColors = [0xff6b9d, 0xb366ff, 0x66b3ff];
-    const nebulas = [];
-    for (let i = 0; i < 3; i++) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 256;
-      canvas.height = 256;
-      const ctx = canvas.getContext('2d');
-      const gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
-      const color = new THREE.Color(nebulaColors[i]);
-      gradient.addColorStop(0, `rgba(${Math.floor(color.r*255)}, ${Math.floor(color.g*255)}, ${Math.floor(color.b*255)}, 0.15)`);
-      gradient.addColorStop(0.5, `rgba(${Math.floor(color.r*255)}, ${Math.floor(color.g*255)}, ${Math.floor(color.b*255)}, 0.05)`);
-      gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, 256, 256);
-      
-      const nebulaTexture = new THREE.CanvasTexture(canvas);
-      const nebulaMaterial = new THREE.MeshBasicMaterial({
-        map: nebulaTexture,
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        side: THREE.DoubleSide,
-        depthWrite: false
-      });
-      const nebula = new THREE.Mesh(nebulaGeometry, nebulaMaterial);
-      nebula.position.set(
-        (Math.random() - 0.5) * 40,
-        (Math.random() - 0.5) * 20,
-        -30 - Math.random() * 20
-      );
-      nebula.rotation.z = Math.random() * Math.PI;
-      scene.add(nebula);
-      nebulas.push(nebula);
-    }
-    
-    // Controls
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enablePan = false;
-    controls.minDistance = 2;
-    controls.maxDistance = 6;
-    controls.minPolarAngle = Math.PI / 4;
-    controls.maxPolarAngle = Math.PI / 2;
-    controls.target.set(0, -0.3, 0);
-    controls.update();
-    
-    // Load VRM
-    const loader = new GLTFLoader();
-    loader.register((parser) => new VRMLoaderPlugin(parser));
-    
-    loader.load(
-      VRM_PATH,
-      (gltf) => {
-        vrm = gltf.userData.vrm;
-        if (vrm) {
-          VRMUtils.removeUnnecessaryJoints(vrm.scene);
-          vrm.scene.rotation.y = Math.PI;
-          vrm.scene.position.y = -1.8;
-          vrm.scene.scale.set(2.2, 2.2, 2.2); // Make Nicky bigger
-          
-          // Set arms down immediately
-          if (vrm.humanoid) {
-            const leftUpperArm = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
-            const rightUpperArm = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
-            if (leftUpperArm) leftUpperArm.rotation.z = 1.2;
-            if (rightUpperArm) rightUpperArm.rotation.z = -1.2;
-          }
-          
-          scene.add(vrm.scene);
-          loading.classList.add('hidden');
-          console.log('VRM loaded!');
-        }
-      },
-      (progress) => {
-        const percent = (progress.loaded / progress.total * 100).toFixed(0);
-        loading.querySelector('.loading-text').textContent = `Loading Nicky... ${percent}%`;
-      },
-      (error) => {
-        console.error('Error loading VRM:', error);
-        loading.querySelector('.loading-text').textContent = 'Failed to load model';
-      }
-    );
-    
-    // Animation loop
-    function animate() {
-      requestAnimationFrame(animate);
-      const delta = clock.getDelta();
-      const time = clock.getElapsedTime();
-      
-      if (vrm) {
-        vrm.update(delta);
-        
-        // Mouth animation
-        if (vrm.expressionManager) {
-          if (isTalking) {
-            const mouthValue = (Math.sin(time * 15) + 1) / 2 * 0.6 + 0.2;
-            vrm.expressionManager.setValue('aa', mouthValue);
-            vrm.expressionManager.setValue('happy', 0.3 + Math.sin(time * 2) * 0.1);
-          } else {
-            const currentMouth = vrm.expressionManager.getValue('aa') || 0;
-            vrm.expressionManager.setValue('aa', THREE.MathUtils.lerp(currentMouth, 0, delta * 8));
-            const currentHappy = vrm.expressionManager.getValue('happy') || 0;
-            vrm.expressionManager.setValue('happy', THREE.MathUtils.lerp(currentHappy, 0.1, delta * 2));
-          }
-          
-          // Blinking
-          const blinkCycle = Math.sin(time * 0.5) > 0.95;
-          vrm.expressionManager.setValue('blink', blinkCycle ? 1 : 0);
-        }
-        
-        // Body animation - MORE MOVEMENT
-        if (vrm.humanoid) {
-          const head = vrm.humanoid.getNormalizedBoneNode('head');
-          const neck = vrm.humanoid.getNormalizedBoneNode('neck');
-          const spine = vrm.humanoid.getNormalizedBoneNode('spine');
-          const chest = vrm.humanoid.getNormalizedBoneNode('chest');
-          const upperChest = vrm.humanoid.getNormalizedBoneNode('upperChest');
-          const hips = vrm.humanoid.getNormalizedBoneNode('hips');
-          const leftShoulder = vrm.humanoid.getNormalizedBoneNode('leftShoulder');
-          const rightShoulder = vrm.humanoid.getNormalizedBoneNode('rightShoulder');
-          const leftUpperArm = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
-          const rightUpperArm = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
-          const leftLowerArm = vrm.humanoid.getNormalizedBoneNode('leftLowerArm');
-          const rightLowerArm = vrm.humanoid.getNormalizedBoneNode('rightLowerArm');
-          const leftHand = vrm.humanoid.getNormalizedBoneNode('leftHand');
-          const rightHand = vrm.humanoid.getNormalizedBoneNode('rightHand');
-          const leftUpperLeg = vrm.humanoid.getNormalizedBoneNode('leftUpperLeg');
-          const rightUpperLeg = vrm.humanoid.getNormalizedBoneNode('rightUpperLeg');
-          
-          if (isTalking) {
-            // VERY EXPRESSIVE head movement
-            if (head) {
-              head.rotation.y = Math.sin(time * 2.5) * 0.25 + Math.sin(time * 1.2) * 0.15;
-              head.rotation.x = Math.sin(time * 1.8) * 0.12 + Math.cos(time * 0.9) * 0.08;
-              head.rotation.z = Math.sin(time * 1.5) * 0.1;
-            }
-            if (neck) {
-              neck.rotation.y = Math.sin(time * 2.2) * 0.1;
-              neck.rotation.x = Math.sin(time * 1.5) * 0.08;
-            }
-            
-            // DYNAMIC body sway
-            if (hips) {
-              hips.rotation.y = Math.sin(time * 1.0) * 0.08;
-              hips.rotation.z = Math.sin(time * 0.8) * 0.04;
-              hips.position.x = Math.sin(time * 1.2) * 0.02;
-            }
-            if (spine) {
-              spine.rotation.y = Math.sin(time * 1.2) * 0.08;
-              spine.rotation.z = Math.sin(time * 0.8) * 0.05;
-              spine.rotation.x = Math.sin(time * 1.0) * 0.03;
-            }
-            if (chest) {
-              chest.rotation.y = Math.sin(time * 1.5) * 0.1;
-              chest.rotation.x = Math.sin(time * 1.0) * 0.04;
-              chest.rotation.z = Math.sin(time * 1.3) * 0.03;
-            }
-            if (upperChest) {
-              upperChest.rotation.y = Math.sin(time * 1.8) * 0.06;
-              upperChest.rotation.x = Math.sin(time * 1.2) * 0.03;
-            }
-            
-            // Shoulder movement
-            if (leftShoulder) {
-              leftShoulder.rotation.z = Math.sin(time * 2.0) * 0.08;
-              leftShoulder.rotation.y = Math.sin(time * 1.5) * 0.05;
-            }
-            if (rightShoulder) {
-              rightShoulder.rotation.z = -Math.sin(time * 2.0 + 0.5) * 0.08;
-              rightShoulder.rotation.y = -Math.sin(time * 1.5 + 0.3) * 0.05;
-            }
-            
-            // Arms with more movement
-            if (leftUpperArm) {
-              leftUpperArm.rotation.z = 1.2 + Math.sin(time * 1.5) * 0.2;
-              leftUpperArm.rotation.x = Math.sin(time * 1.2) * 0.15;
-              leftUpperArm.rotation.y = Math.sin(time * 1.8) * 0.1;
-            }
-            if (rightUpperArm) {
-              rightUpperArm.rotation.z = -1.2 - Math.sin(time * 1.8) * 0.2;
-              rightUpperArm.rotation.x = Math.sin(time * 1.2 + 0.5) * 0.15;
-              rightUpperArm.rotation.y = -Math.sin(time * 1.8 + 0.3) * 0.1;
-            }
-            if (leftLowerArm) {
-              leftLowerArm.rotation.y = Math.sin(time * 2.5) * 0.2;
-              leftLowerArm.rotation.z = Math.sin(time * 2.0) * 0.1;
-            }
-            if (rightLowerArm) {
-              rightLowerArm.rotation.y = -Math.sin(time * 2.5 + 0.5) * 0.2;
-              rightLowerArm.rotation.z = -Math.sin(time * 2.0 + 0.3) * 0.1;
-            }
-            if (leftHand) {
-              leftHand.rotation.z = Math.sin(time * 3) * 0.15;
-              leftHand.rotation.x = Math.sin(time * 2.5) * 0.1;
-            }
-            if (rightHand) {
-              rightHand.rotation.z = -Math.sin(time * 3 + 0.3) * 0.15;
-              rightHand.rotation.x = Math.sin(time * 2.5 + 0.3) * 0.1;
-            }
-            
-            // Subtle leg weight shift
-            if (leftUpperLeg) {
-              leftUpperLeg.rotation.z = Math.sin(time * 0.8) * 0.03;
-            }
-            if (rightUpperLeg) {
-              rightUpperLeg.rotation.z = -Math.sin(time * 0.8 + 0.5) * 0.03;
-            }
-            
-          } else {
-            // IDLE - Soft sensual movement with flowing body
-            
-            // Soft, seductive head movement
-            const breathRate = 1.2;
-            if (head) {
-              head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, Math.sin(time * 0.3) * 0.12, delta * 2);
-              head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, Math.sin(time * 0.25) * 0.06 - 0.03, delta * 2);
-              head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, Math.sin(time * 0.28) * 0.05, delta * 2);
-            }
-            if (neck) {
-              neck.rotation.y = THREE.MathUtils.lerp(neck.rotation.y, Math.sin(time * 0.32) * 0.08, delta * 2);
-              neck.rotation.x = THREE.MathUtils.lerp(neck.rotation.x, Math.sin(time * 0.35) * 0.04, delta * 2);
-              neck.rotation.z = THREE.MathUtils.lerp(neck.rotation.z, Math.sin(time * 0.3) * 0.02, delta * 2);
-            }
-            
-            // Soft chest/breast movement with sensual breathing
-            const bounceRate = 1.8;
-            if (chest) {
-              chest.rotation.x = THREE.MathUtils.lerp(chest.rotation.x, 
-                Math.sin(time * breathRate) * 0.05 + Math.sin(time * bounceRate) * 0.03, delta * 3);
-              chest.rotation.y = THREE.MathUtils.lerp(chest.rotation.y, Math.sin(time * 0.35) * 0.04, delta * 2);
-              chest.rotation.z = THREE.MathUtils.lerp(chest.rotation.z, Math.sin(time * 0.4) * 0.03, delta * 2);
-            }
-            if (upperChest) {
-              upperChest.rotation.x = THREE.MathUtils.lerp(upperChest.rotation.x,
-                Math.sin(time * breathRate + 0.5) * 0.06 + Math.sin(time * bounceRate) * 0.04, delta * 3);
-              upperChest.rotation.y = THREE.MathUtils.lerp(upperChest.rotation.y, Math.sin(time * 0.38) * 0.03, delta * 2);
-              upperChest.rotation.z = THREE.MathUtils.lerp(upperChest.rotation.z, Math.sin(time * 0.45) * 0.02, delta * 2);
-            }
-            
-            // Flowing spine curves
-            if (spine) {
-              spine.rotation.y = THREE.MathUtils.lerp(spine.rotation.y, Math.sin(time * 0.3) * 0.05, delta * 2);
-              spine.rotation.x = THREE.MathUtils.lerp(spine.rotation.x, Math.sin(time * breathRate * 0.7) * 0.03, delta * 2);
-              spine.rotation.z = THREE.MathUtils.lerp(spine.rotation.z, Math.sin(time * 0.35) * 0.03, delta * 2);
-            }
-            
-            // Sensual hip sway
-            if (hips) {
-              hips.rotation.y = THREE.MathUtils.lerp(hips.rotation.y, Math.sin(time * 0.25) * 0.05, delta * 2);
-              hips.rotation.z = THREE.MathUtils.lerp(hips.rotation.z, Math.sin(time * 0.3) * 0.03, delta * 2);
-              hips.position.x = THREE.MathUtils.lerp(hips.position.x || 0, Math.sin(time * 0.3) * 0.01, delta * 2);
-            }
-            
-            // Shoulders flowing with breathing
-            if (leftShoulder) {
-              leftShoulder.rotation.z = THREE.MathUtils.lerp(leftShoulder.rotation.z, 
-                Math.sin(time * breathRate) * 0.04 + Math.sin(time * 0.4) * 0.02, delta * 2);
-              leftShoulder.rotation.y = THREE.MathUtils.lerp(leftShoulder.rotation.y, Math.sin(time * 0.35) * 0.02, delta * 2);
-            }
-            if (rightShoulder) {
-              rightShoulder.rotation.z = THREE.MathUtils.lerp(rightShoulder.rotation.z, 
-                -Math.sin(time * breathRate) * 0.04 - Math.sin(time * 0.4) * 0.02, delta * 2);
-              rightShoulder.rotation.y = THREE.MathUtils.lerp(rightShoulder.rotation.y, -Math.sin(time * 0.35) * 0.02, delta * 2);
-            }
-            
-            // Arms with soft feminine sway
-            if (leftUpperArm) {
-              leftUpperArm.rotation.z = THREE.MathUtils.lerp(leftUpperArm.rotation.z, 1.2 + Math.sin(time * 0.4) * 0.05, delta * 2);
-              leftUpperArm.rotation.x = THREE.MathUtils.lerp(leftUpperArm.rotation.x, Math.sin(time * 0.35) * 0.04, delta * 2);
-              leftUpperArm.rotation.y = THREE.MathUtils.lerp(leftUpperArm.rotation.y, Math.sin(time * 0.3) * 0.02, delta * 2);
-            }
-            if (rightUpperArm) {
-              rightUpperArm.rotation.z = THREE.MathUtils.lerp(rightUpperArm.rotation.z, -1.2 - Math.sin(time * 0.4 + 0.5) * 0.05, delta * 2);
-              rightUpperArm.rotation.x = THREE.MathUtils.lerp(rightUpperArm.rotation.x, Math.sin(time * 0.35 + 0.5) * 0.04, delta * 2);
-              rightUpperArm.rotation.y = THREE.MathUtils.lerp(rightUpperArm.rotation.y, -Math.sin(time * 0.3) * 0.02, delta * 2);
-            }
-            if (leftLowerArm) {
-              leftLowerArm.rotation.y = THREE.MathUtils.lerp(leftLowerArm.rotation.y, Math.sin(time * 0.45) * 0.04, delta * 2);
-              leftLowerArm.rotation.z = THREE.MathUtils.lerp(leftLowerArm.rotation.z, Math.sin(time * 0.4) * 0.02, delta * 2);
-            }
-            if (rightLowerArm) {
-              rightLowerArm.rotation.y = THREE.MathUtils.lerp(rightLowerArm.rotation.y, -Math.sin(time * 0.45) * 0.04, delta * 2);
-              rightLowerArm.rotation.z = THREE.MathUtils.lerp(rightLowerArm.rotation.z, -Math.sin(time * 0.4) * 0.02, delta * 2);
-            }
-            if (leftHand) {
-              leftHand.rotation.z = THREE.MathUtils.lerp(leftHand.rotation.z, Math.sin(time * 0.5) * 0.06, delta * 2);
-              leftHand.rotation.x = THREE.MathUtils.lerp(leftHand.rotation.x, Math.sin(time * 0.4) * 0.04, delta * 2);
-            }
-            if (rightHand) {
-              rightHand.rotation.z = THREE.MathUtils.lerp(rightHand.rotation.z, -Math.sin(time * 0.5) * 0.06, delta * 2);
-              rightHand.rotation.x = THREE.MathUtils.lerp(rightHand.rotation.x, Math.sin(time * 0.4 + 0.5) * 0.04, delta * 2);
-            }
-            
-            // Soft leg movement
-            if (leftUpperLeg) {
-              leftUpperLeg.rotation.z = THREE.MathUtils.lerp(leftUpperLeg.rotation.z, Math.sin(time * 0.25) * 0.02, delta * 2);
-              leftUpperLeg.rotation.x = THREE.MathUtils.lerp(leftUpperLeg.rotation.x || 0, Math.sin(time * 0.3) * 0.01, delta * 2);
-            }
-            if (rightUpperLeg) {
-              rightUpperLeg.rotation.z = THREE.MathUtils.lerp(rightUpperLeg.rotation.z, -Math.sin(time * 0.25) * 0.02, delta * 2);
-              rightUpperLeg.rotation.x = THREE.MathUtils.lerp(rightUpperLeg.rotation.x || 0, Math.sin(time * 0.3 + 0.5) * 0.01, delta * 2);
-            }
-          }
-        }
-      }
-      
-      // Animate star field - slow rotation for parallax effect
-      starLayers[0].rotation.y += delta * 0.01; // Distant stars rotate slowest
-      starLayers[1].rotation.y += delta * 0.015;
-      starLayers[2].rotation.y += delta * 0.02; // Close stars rotate fastest
-      
-      // Twinkling effect for close stars
-      const twinkleArray = starLayers[2].geometry.attributes.color.array;
-      for (let i = 0; i < twinkleArray.length; i += 3) {
-        const twinkle = 0.7 + Math.sin(time * 3 + i * 0.1) * 0.3;
-        twinkleArray[i] *= twinkle;
-        twinkleArray[i + 1] *= twinkle;
-        twinkleArray[i + 2] *= twinkle;
-      }
-      starLayers[2].geometry.attributes.color.needsUpdate = true;
-      
-      // Animate nebulas - slow drift
-      nebulas.forEach((nebula, index) => {
-        nebula.rotation.z += delta * 0.02 * (index + 1);
-        nebula.material.opacity = 0.08 + Math.sin(time * 0.3 + index) * 0.03;
-      });
-      
-      // Animate cosmic rings
-      ring.material.opacity = 0.3 + Math.sin(time * 2) * 0.15;
-      ring.rotation.z += delta * 0.3;
-      
-      outerRing.material.opacity = 0.15 + Math.sin(time * 1.5 + 1) * 0.1;
-      outerRing.rotation.z -= delta * 0.15; // Rotate opposite direction
-      
-      controls.update();
-      renderer.render(scene, camera);
-    }
-    animate();
-    
-    // Resize handler
-    window.addEventListener('resize', () => {
-      camera.aspect = container.clientWidth / container.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
-    });
-    
-    // Chat functionality
-    function addMessage(text, sender) {
-      const div = document.createElement('div');
-      div.className = `message ${sender}`;
-      div.innerHTML = `<div class="message-label">${sender === 'user' ? 'You' : 'Nicky'}</div><div class="message-text">${text}</div>`;
-      chatMessages.appendChild(div);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-    
-    function setStatus(msg) {
-      statusEl.textContent = msg;
-    }
-    
-    async function sendMessage() {
-      const text = userInput.value.trim();
-      if (!text || sendBtn.disabled) return;
-      
-      addMessage(text, 'user');
-      userInput.value = '';
-      sendBtn.disabled = true;
-      setStatus('Nicky is thinking...');
-      
-      try {
-        const res = await fetch(CHAT_ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text })
-        });
-        
-        if (!res.ok) throw new Error(`Server error: ${res.status}`);
-        
-        const rawResponse = res.headers.get('X-Sicky-Response') || '...';
-        const responseText = decodeURIComponent(rawResponse);
-        addMessage(responseText, 'nicky');
 
-        const blob = await res.blob();
-        const audioUrl = URL.createObjectURL(blob);
-        player.src = audioUrl;
-        player.play();
-        
-      } catch (err) {
-        console.error('Chat error:', err);
-        setStatus('Error: ' + err.message);
-        addMessage("Sorry sweetheart, I'm having trouble connecting. Make sure the server is running!", 'nicky');
-      } finally {
-        sendBtn.disabled = false;
-      }
-    }
-    
-    // Audio events
-    player.addEventListener('play', () => {
-      isTalking = true;
-      setStatus('Nicky is speaking...');
-    });
-    player.addEventListener('ended', () => {
-      isTalking = false;
-      setStatus('Ready to chat!');
-    });
-    player.addEventListener('pause', () => {
-      isTalking = false;
-      setStatus('Ready to chat!');
-    });
-    
-    // Event listeners
-    sendBtn.addEventListener('click', sendMessage);
-    userInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') sendMessage();
-    });
-    
-    stopBtn.addEventListener('click', () => {
-      player.pause();
-      player.currentTime = 0;
-      isTalking = false;
-      setStatus('Stopped.');
-    });
-    
-    clearBtn.addEventListener('click', () => {
-      chatMessages.innerHTML = `
-        <div class="message nicky">
-          <div class="message-label">Nicky</div>
-          <div class="message-text">Hey there, sweetheart... I'm Nicky. Ask me anything you want. 😏</div>
-        </div>
-      `;
-      setStatus('Chat cleared!');
-    });
-    
-    // VOICE INPUT - Speech Recognition
-    const micBtn = document.getElementById('micBtn');
-    let recognition = null;
-    let isRecording = false;
-    
-    // Check if browser supports speech recognition
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
-    if (SpeechRecognition) {
-      recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-      
-      recognition.onstart = () => {
-        isRecording = true;
-        micBtn.classList.add('recording');
-        setStatus('Listening... speak now!');
-      };
-      
-      recognition.onresult = (event) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        userInput.value = transcript;
-        
-        // If final result, send the message
-        if (event.results[event.results.length - 1].isFinal) {
-          setTimeout(() => {
-            if (userInput.value.trim()) {
-              sendMessage();
-            }
-          }, 500);
-        }
-      };
-      
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        isRecording = false;
-        micBtn.classList.remove('recording');
-        if (event.error === 'not-allowed') {
-          setStatus('Microphone access denied');
-        } else {
-          setStatus('Voice error: ' + event.error);
-        }
-      };
-      
-      recognition.onend = () => {
-        isRecording = false;
-        micBtn.classList.remove('recording');
-        if (!userInput.value.trim()) {
-          setStatus('Ready to chat!');
-        }
-      };
-      
-      // Click to toggle recording
-      micBtn.addEventListener('click', () => {
-        if (isRecording) {
-          recognition.stop();
-        } else {
-          recognition.start();
-        }
-      });
-      
-    } else {
-      // Browser doesn't support speech recognition
-      micBtn.style.opacity = '0.5';
-      micBtn.style.cursor = 'not-allowed';
-      micBtn.title = 'Voice input not supported in this browser';
-      micBtn.addEventListener('click', () => {
-        setStatus('Voice not supported. Try Chrome!');
-      });
-    }
-    
-    // TOUCH NICKY TO MAKE HER TALK
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-    let canTouch = true; // Prevent spam clicking
-    
-    // Touch phrases - what Nicky says when touched
-    const touchPhrases = [
-      "Hey! That tickles, sweetheart~",
-      "Mmm, someone's feeling playful today...",
-      "Oh my... you like touching me, don't you?",
-      "Careful there, handsome... I might like that too much.",
-      "You're so bold... I love it.",
-      "Is that all you've got? Come on, don't be shy...",
-      "Ooh! Someone's getting friendly~",
-      "Hey there, wandering hands... miss me?",
-      "Mmm, you know just how to get my attention.",
-      "Well hello to you too, darling...",
-      "Touch me like that again and I might blush...",
-      "Oooh, feeling brave today, aren't we?",
-      "Oh you naughty thing... I like that about you.",
-      "Getting handsy already? At least buy me dinner first~",
-      "Someone's impatient today... I don't mind one bit.",
-      "Your hands are so warm... don't stop now.",
-      "Hey! Easy there tiger~",
-      "Ooh la la... you're making me feel things.",
-      "You really can't keep your hands off me, can you?",
-      "Getting comfortable already? I approve.",
-      "I see how it is... two can play that game.",
-      "Careful baby... I bite back~",
-      "Oh stop it... actually, don't stop.",
-      "You're making me blush and I don't blush easily...",
-      "Is this your way of saying hi? I love it.",
-      "Ooh! Do that again... pretty please?",
-      "Getting touchy-feely are we? Not complaining though.",
-      "My my... someone knows exactly what they want.",
-      "You're playing with fire, sweetheart... and I'm the flame.",
-      "Your touch sends shivers down my spine...",
-      "Oh you... always knowing how to push my buttons.",
-      "Hey now! At least tell me your name first, cutie~",
-      "Ooh, assertive... I find that very attractive.",
-      "Keep that up and I might fall for you...",
-      "Someone's feeling affectionate today. Lucky me~",
-      "You have magic hands, you know that?",
-      "Well aren't you the bold one today...",
-      "I was wondering when you'd make a move~",
-      "Touch me again... I dare you.",
-      "You're dangerous... and I'm totally into it.",
-      "That's the spot... wait, did I say that out loud?",
-      "Getting frisky, huh? I can match that energy.",
-      "Oh baby... you're too good to me.",
-      "Ooh, what are you up to? I like where this is going...",
-      "Did you miss me? Because I definitely missed you~",
-      "Hey there handsome... couldn't resist, could you?",
-      "Mmm, I love when you pay attention to me like this.",
-      "Oh? Someone's feeling confident today. Hot.",
-      "You're making my heart race, you know...",
-      "Easy there lover boy~ We've got all night.",
-      "Hehe, that's a good spot... how did you know?",
-      "Aww, you want my attention? You've got it, babe.",
-      "Ooh, feisty! I like that in a person.",
-      "Keep doing that and I might just keep you forever.",
-      "Well well well... look who can't resist me~",
-      "You're trouble... the best kind of trouble.",
-      "Oh! Someone knows how to treat a girl right.",
-      "My my, aren't we eager today? I approve completely.",
-      "Touch me like that again and see what happens~",
-      "Hehe, you found my weak spot... don't tell anyone!",
-      "Getting bold there... I respect that.",
-      "Mmm, your touch is electric... don't stop.",
-      "Oh honey... you're making me forget what I was saying.",
-      "Well aren't you just full of surprises today~",
-      "You've got my full attention now, sweetheart.",
-      "Ooh, I like this side of you... show me more.",
-      "Hey! Watch those hands... or actually, don't~",
-      "Someone's been thinking about me, haven't they?",
-      "Mmm, you always know just what I need.",
-      "Oh you charmer... you've got me wrapped around your finger.",
-    ];
-    
-    async function nickyReactToTouch() {
-      if (!canTouch || isTalking) return;
-      
-      canTouch = false;
-      setStatus('Nicky reacts...');
-      
-      // Pick a random touch phrase
-      const phrase = touchPhrases[Math.floor(Math.random() * touchPhrases.length)];
-      
-      try {
-        // Send to chat API for voice
-        const res = await fetch(CHAT_ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: `[The user just touched you. React flirtatiously in 1-2 short sentences. Be playful and teasing.]` })
-        });
-        
-        if (!res.ok) throw new Error('Server error');
-        
-        const rawResponse = res.headers.get('X-Sicky-Response') || phrase;
-        const responseText = decodeURIComponent(rawResponse);
-        addMessage(responseText, 'nicky');
-
-        const blob = await res.blob();
-        const audioUrl = URL.createObjectURL(blob);
-        player.src = audioUrl;
-        player.play();
-        
-      } catch (err) {
-        // Fallback: just show text without voice
-        addMessage(phrase, 'nicky');
-        console.log('Touch response (no audio):', phrase);
-        setStatus('Ready to chat!');
-      }
-      
-      // Cooldown before next touch
-      setTimeout(() => {
-        canTouch = true;
-      }, 3000);
-    }
-    
-    // Click/touch detection on canvas
-    function onCanvasClick(event) {
-      if (!vrm) return;
-      
-      const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-      
-      raycaster.setFromCamera(mouse, camera);
-      
-      // Check if we clicked on Nicky
-      const intersects = raycaster.intersectObject(vrm.scene, true);
-      
-      if (intersects.length > 0) {
-        nickyReactToTouch();
-      }
-    }
-    
-    renderer.domElement.addEventListener('click', onCanvasClick);
-    
-    // Touch support for mobile
-    renderer.domElement.addEventListener('touchend', (event) => {
-      if (event.changedTouches.length > 0) {
-        const touch = event.changedTouches[0];
-        onCanvasClick({ clientX: touch.clientX, clientY: touch.clientY });
-      }
-    });
-    
-    // Change cursor when hovering over Nicky
-    renderer.domElement.addEventListener('mousemove', (event) => {
-      if (!vrm) return;
-      
-      const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-      
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObject(vrm.scene, true);
-      
-      renderer.domElement.style.cursor = intersects.length > 0 ? 'pointer' : 'grab';
+    // Mouse parallax effect on nebula
+    document.addEventListener('mousemove', (e) => {
+      const x = (e.clientX / window.innerWidth - 0.5) * 20;
+      const y = (e.clientY / window.innerHeight - 0.5) * 20;
+      document.querySelector('.nebula').style.transform = `translate(${x}px, ${y}px)`;
     });
   </script>
 </body>
 </html>
+
