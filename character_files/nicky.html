@@ -51,6 +51,25 @@
       height: 100%;
       display: block;
     }
+    .back-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background: rgba(255, 107, 157, 0.2);
+      border: 1px solid rgba(255, 107, 157, 0.4);
+      border-radius: 25px;
+      color: #ff6b9d;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 200;
+      transition: all 0.3s ease;
+    }
+    .back-btn:hover {
+      background: rgba(255, 107, 157, 0.3);
+      transform: translateX(-5px);
+    }
     .title-overlay {
       position: absolute;
       top: 30px;
@@ -287,6 +306,7 @@
   </style>
 </head>
 <body>
+  <a href="index.html" class="back-btn">← Back to Hub</a>
   <div id="app">
     <div id="canvas-container">
       <div class="title-overlay">
