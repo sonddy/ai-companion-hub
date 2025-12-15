@@ -1,6 +1,11 @@
 [build]
   functions = "netlify/functions"
   publish = "character_files"
+  command = "echo 'No build needed'"
+  ignore = "requirements.txt"
+
+[build.environment]
+  NODE_VERSION = "18"
 
 [[redirects]]
   from = "/*"
