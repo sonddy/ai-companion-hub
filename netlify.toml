@@ -8,7 +8,7 @@
   NODE_VERSION = "18"
 
 [[redirects]]
-  from = "/*"
+  from = "/"
   to = "/main.html"
   status = 200
 

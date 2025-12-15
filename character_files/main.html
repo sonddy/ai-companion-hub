@@ -491,15 +491,183 @@
     }
 
 
-    /* Responsive */
+    /* Responsive - Tablet */
     @media (max-width: 768px) {
       .models-grid {
         grid-template-columns: 1fr;
         padding: 0 10px;
+        gap: 20px;
       }
       
       .corner { display: none; }
       .frame { display: none; }
+      
+      .welcome {
+        margin-bottom: 40px;
+      }
+      
+      .welcome h1 {
+        font-size: 36px;
+      }
+      
+      .welcome h2 {
+        font-size: 16px;
+      }
+      
+      .container {
+        padding: 20px 15px;
+      }
+    }
+
+    /* Responsive - Mobile */
+    @media (max-width: 480px) {
+      .container {
+        padding: 15px 10px;
+      }
+      
+      .welcome {
+        margin-bottom: 30px;
+      }
+      
+      .welcome-tag {
+        font-size: 10px;
+        letter-spacing: 3px;
+      }
+      
+      .welcome h1 {
+        font-size: 28px;
+      }
+      
+      .welcome h2 {
+        font-size: 14px;
+        letter-spacing: 1px;
+      }
+      
+      .welcome .subtitle {
+        font-size: 14px;
+        margin-top: 20px;
+      }
+      
+      .divider {
+        width: 150px;
+        margin: 25px auto;
+      }
+      
+      .models-title {
+        font-size: 11px;
+        letter-spacing: 2px;
+        margin-bottom: 25px;
+      }
+      
+      .models-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        padding: 0 5px;
+      }
+      
+      .model-card {
+        padding: 20px 15px;
+        border-radius: 15px;
+      }
+      
+      .model-card .status {
+        top: 12px;
+        right: 12px;
+        font-size: 8px;
+        padding: 4px 8px;
+      }
+      
+      .model-avatar {
+        width: 70px;
+        height: 70px;
+        font-size: 28px;
+        margin-bottom: 15px;
+      }
+      
+      .model-name {
+        font-size: 20px;
+      }
+      
+      .model-type {
+        font-size: 10px;
+        letter-spacing: 2px;
+        margin-bottom: 10px;
+      }
+      
+      .model-desc {
+        font-size: 12px;
+        line-height: 1.5;
+        margin-bottom: 15px;
+      }
+      
+      .model-features {
+        gap: 5px;
+      }
+      
+      .feature-tag {
+        font-size: 8px;
+        padding: 3px 8px;
+      }
+      
+      .enter-btn {
+        font-size: 10px;
+        padding: 8px 20px;
+        bottom: 15px;
+      }
+      
+      .footer {
+        margin-top: 40px;
+      }
+      
+      .footer p {
+        font-size: 10px;
+      }
+      
+      /* Always show enter button on mobile (no hover) */
+      .model-card:not(.disabled) .enter-btn {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+        position: relative;
+        bottom: auto;
+        left: auto;
+        transform: none;
+        display: block;
+        width: fit-content;
+        margin: 15px auto 0;
+      }
+      
+      /* Reduce stars on mobile for performance */
+      .grid-lines {
+        background-size: 30px 30px;
+      }
+    }
+
+    /* Touch-friendly improvements */
+    @media (hover: none) and (pointer: coarse) {
+      .model-card:not(.disabled) .enter-btn {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+        position: relative;
+        bottom: auto;
+        left: auto;
+        transform: none;
+        display: block;
+        width: fit-content;
+        margin: 15px auto 0;
+      }
+      
+      .model-card:active {
+        transform: scale(0.98);
+      }
+    }
+
+    /* Safe area for notched phones */
+    @supports (padding: max(0px)) {
+      .container {
+        padding-left: max(15px, env(safe-area-inset-left));
+        padding-right: max(15px, env(safe-area-inset-right));
+        padding-bottom: max(20px, env(safe-area-inset-bottom));
+      }
     }
   </style>
 </head>
