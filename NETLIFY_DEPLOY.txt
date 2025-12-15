@@ -1,0 +1,95 @@
+🚀 NETLIFY DEPLOYMENT CHECKLIST
+================================
+
+✅ DONE - Project converted to Netlify serverless functions!
+
+📦 WHAT'S INCLUDED:
+- netlify.toml (configuration)
+- netlify/functions/ (4 serverless functions)
+  • nicky-chat.js (Flirty companion)
+  • luna-chat.js (Sweet assistant)
+  • cypher-chat.js (Crypto analyst + DexScreener)
+  • oracle-chat.js (Astrology/spiritual guide)
+- character_files/ (static files - will be published)
+- All HTML files updated to use Netlify function endpoints
+- VRM models copied to character_files/models/
+
+📝 DEPLOYMENT STEPS:
+
+1. CREATE GIT REPOSITORY:
+   cd C:\Users\sondd\OneDrive\Documents\riko_project-main
+   git init
+   git add .
+   git commit -m "AI Companion Hub - Ready for Netlify"
+
+2. PUSH TO GITHUB:
+   - Create new repo on github.com
+   - git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
+   - git push -u origin main
+
+3. DEPLOY TO NETLIFY:
+   - Go to app.netlify.com
+   - Click "Add new site" → "Import from Git"
+   - Connect GitHub and select your repo
+   - Settings will auto-detect from netlify.toml
+   - Click "Deploy"
+
+4. SET ENVIRONMENT VARIABLE:
+   - In Netlify dashboard → Site settings → Environment variables
+   - Add variable:
+     Key: OPENAI_API_KEY
+     Value: sk-your-openai-api-key-here
+   - Save
+
+5. REDEPLOY:
+   - Go to Deploys tab
+   - Click "Trigger deploy" → "Deploy site"
+
+🎉 DONE! Your site will be live at: https://your-site-name.netlify.app
+
+📋 FILE CHECKLIST:
+✅ netlify.toml
+✅ netlify/functions/nicky-chat.js
+✅ netlify/functions/luna-chat.js
+✅ netlify/functions/cypher-chat.js
+✅ netlify/functions/oracle-chat.js
+✅ character_files/main.html (landing page)
+✅ character_files/index.html (Nicky)
+✅ character_files/luna.html (Luna)
+✅ character_files/cypher.html (Cypher)
+✅ character_files/oracle.html (Oracle)
+✅ character_files/models/nicky.vrm
+✅ character_files/models/luna.vrm
+✅ character_files/models/cypher.vrm
+✅ character_files/models/oracle.vrm
+✅ .gitignore
+✅ package.json
+
+⚠️ BEFORE DEPLOYING:
+- Make sure .env file is NOT committed (it's in .gitignore)
+- VRM files might be large - check Netlify has space
+- OpenAI API key must be set in Netlify dashboard
+
+💰 COST:
+- Netlify: FREE (125k function requests/month)
+- OpenAI: ~$0.01-0.02 per conversation
+
+🔍 TESTING LOCALLY:
+   npm install netlify-cli
+   netlify dev
+   # Opens at http://localhost:8888
+
+📊 MONITORING:
+- Check function logs in Netlify dashboard
+- Monitor OpenAI usage at platform.openai.com
+
+🎯 YOUR SITE FEATURES:
+- 4 AI companions with 3D avatars
+- Voice chat (mic input + voice responses)
+- Real-time crypto data (Cypher)
+- Astrology readings (Oracle)
+- Interactive touch/click
+- Beautiful animations
+
+READY TO DEPLOY! 🚀
+

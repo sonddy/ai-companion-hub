@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nicky - 3D AI Companion</title>
+  
+  <!-- Import maps for ES modules -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+      "@pixiv/three-vrm": "https://unpkg.com/@pixiv/three-vrm@2.1.0/lib/three-vrm.module.js"
+    }
+  }
+  </script>
+  
+  <style>
+    :root {
+      --bg: #050510;
+      --card: #0d0d1a;
+      --accent: #ff6b9d;
+      --accent-2: #66b3ff;
+      --text: #e8e8ff;
+      --muted: #9090c0;
+      --user-bg: #1a1a3a;
+      --nicky-bg: #cc4477;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: radial-gradient(ellipse at center, #0a0a15 0%, #050510 50%, #020208 100%);
+      color: var(--text);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    #app {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      position: relative;
+    }
+    #canvas-container {
+      flex: 1;
+      position: relative;
+    }
+    #canvas-container canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .title-overlay {
+      position: absolute;
+      top: 30px;
+      left: 30px;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .title-overlay h1 {
+      font-size: 48px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ff6b9d, #b366ff, #66b3ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+      text-shadow: 0 0 40px rgba(179, 102, 255, 0.4);
+    }
+    .title-overlay p {
+      font-size: 16px;
+      color: rgba(200, 200, 255, 0.6);
+    }
+    .loading-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 20;
+    }
+    .loading-overlay.hidden { display: none; }
+    .loading-text {
+      color: #ff6b9d;
+      font-size: 20px;
+      font-weight: 600;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+    
+    /* Chat Interface */
+    .chat-interface {
+      position: fixed;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 380px;
+      max-height: 80vh;
+      background: rgba(10, 10, 25, 0.9);
+      border: 1px solid rgba(102, 179, 255, 0.3);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(102, 179, 255, 0.15), 0 0 80px rgba(255, 107, 157, 0.1);
+      backdrop-filter: blur(15px);
+      z-index: 100;
+    }
+    .chat-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(102, 179, 255, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .chat-header h2 {
+      font-size: 18px;
+      font-weight: 600;
+      background: linear-gradient(90deg, #ff6b9d, #66b3ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .status {
+      font-size: 12px;
+      color: #66ffb3;
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 350px;
+    }
+    .message {
+      padding: 12px 16px;
+      border-radius: 12px;
+      max-width: 85%;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .message.user {
+      background: linear-gradient(135deg, #1a2a4a, #2a3d6e);
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+      border: 1px solid rgba(102, 179, 255, 0.2);
+    }
+    .message.nicky {
+      background: linear-gradient(135deg, #4a1a3d, #cc4477);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      border: 1px solid rgba(255, 107, 157, 0.2);
+    }
+    .message-label {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+    .message-text {
+      line-height: 1.5;
+      font-size: 14px;
+    }
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      padding: 4px 0;
+    }
+    .typing-indicator span {
+      width: 8px;
+      height: 8px;
+      background: linear-gradient(135deg, #ff6b9d, #b366ff, #66b3ff);
+      border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out;
+    }
+    .typing-indicator span:nth-child(1) { animation-delay: 0s; }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-6px); }
+    }
+    .chat-input-area {
+      padding: 16px;
+      border-top: 1px solid rgba(255, 179, 102, 0.2);
+      display: flex;
+      gap: 10px;
+    }
+    .chat-input-area input {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      font-family: inherit;
+    }
+    .chat-input-area input:focus {
+      border-color: #b366ff;
+      box-shadow: 0 0 0 3px rgba(179, 102, 255, 0.2);
+    }
+    button {
+      padding: 12px 20px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg, #ff6b9d, #b366ff, #66b3ff);
+      color: #050510;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px rgba(179, 102, 255, 0.3), 0 0 20px rgba(102, 179, 255, 0.2);
+      font-family: inherit;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(179, 102, 255, 0.5), 0 0 30px rgba(102, 179, 255, 0.3);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .chat-controls {
+      padding: 0 16px 16px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    .chat-controls button {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      box-shadow: none;
+      padding: 8px 16px;
+      font-size: 12px;
+    }
+    .mic-btn {
+      padding: 12px 16px;
+      font-size: 18px;
+      background: linear-gradient(135deg, #ff6b9d, #b366ff);
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .mic-btn:hover {
+      transform: scale(1.1);
+    }
+    .mic-btn.recording {
+      background: linear-gradient(135deg, #ff3366, #ff6699);
+      animation: mic-pulse 1s ease-in-out infinite;
+      box-shadow: 0 0 20px rgba(255, 51, 102, 0.6);
+    }
+    @keyframes mic-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    .chat-messages::-webkit-scrollbar { width: 6px; }
+    .chat-messages::-webkit-scrollbar-track { background: rgba(102, 179, 255, 0.1); border-radius: 3px; }
+    .chat-messages::-webkit-scrollbar-thumb { background: rgba(179, 102, 255, 0.5); border-radius: 3px; }
+    
+    @media (max-width: 900px) {
+      .chat-interface {
+        right: 10px;
+        left: 10px;
+        width: auto;
+        top: auto;
+        bottom: 10px;
+        transform: none;
+        max-height: 50vh;
+      }
+      .title-overlay h1 { font-size: 32px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="canvas-container">
+      <div class="title-overlay">
+        <h1>Nicky</h1>
+        <p>Your 3D AI Companion</p>
+      </div>
+      <div class="loading-overlay" id="loading">
+        <div class="loading-text">Loading Nicky...</div>
+      </div>
+    </div>
+
+    <div class="chat-interface">
+      <div class="chat-header">
+        <h2>Chat with Nicky</h2>
+        <span class="status" id="status">Ready to chat!</span>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="message nicky">
+          <div class="message-label">Nicky</div>
+          <div class="message-text">Hey there, sweetheart... I'm Nicky. Ask me anything you want. 😏</div>
+        </div>
+      </div>
+      <div class="chat-input-area">
+        <input type="text" id="userInput" placeholder="Ask Nicky anything..." autofocus />
+        <button id="micBtn" class="mic-btn" title="Hold to talk">🎤</button>
+        <button id="sendBtn">Send</button>
+          </div>
+      <div class="chat-controls">
+        <button id="stopBtn">Stop</button>
+        <button id="clearBtn">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <audio id="player" hidden></audio>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+    
+    const CHAT_ENDPOINT = '/.netlify/functions/nicky-chat';
+    const VRM_PATH = 'models/nicky.vrm';
+    
+    // State
+    let vrm = null;
+    let isTalking = false;
+    let clock = new THREE.Clock();
+    
+    // DOM elements
+    const container = document.getElementById('canvas-container');
+    const loading = document.getElementById('loading');
+    const chatMessages = document.getElementById('chatMessages');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const statusEl = document.getElementById('status');
+    const player = document.getElementById('player');
+    
+    // Three.js setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050510); // Deep space black
+    
+    const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
+    camera.position.set(0, 0.5, 5);
+    
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+    
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
+    
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight1.position.set(5, 5, 5);
+    dirLight1.castShadow = true;
+    scene.add(dirLight1);
+    
+    const dirLight2 = new THREE.DirectionalLight(0xff6b9d, 0.5);
+    dirLight2.position.set(-5, 5, -5);
+    scene.add(dirLight2);
+    
+    const pointLight = new THREE.PointLight(0xffb366, 0.8);
+    pointLight.position.set(0, 2, 3);
+    scene.add(pointLight);
+    
+    // Add subtle pink rim light
+    const rimLight = new THREE.DirectionalLight(0xff6b9d, 0.3);
+    rimLight.position.set(0, 3, -3);
+    scene.add(rimLight);
+    
+    // Add cosmic platform floor
+    const floorGeometry = new THREE.CircleGeometry(4, 64);
+    const floorMaterial = new THREE.MeshStandardMaterial({
+      color: 0x1a1a3a,
+      transparent: true,
+      opacity: 0.4,
+      metalness: 0.8,
+      roughness: 0.2,
+      emissive: 0x0a0a20,
+      emissiveIntensity: 0.3
+    });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -2.2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+    
+    // Add glowing cosmic ring around Nicky
+    const ringGeometry = new THREE.RingGeometry(1.5, 1.7, 64);
+    const ringMaterial = new THREE.MeshBasicMaterial({
+      color: 0xb366ff,
+      transparent: true,
+      opacity: 0.4,
+      side: THREE.DoubleSide
+    });
+    const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = -2.15;
+    scene.add(ring);
+    
+    // Add outer cosmic ring
+    const outerRingGeometry = new THREE.RingGeometry(2.5, 2.6, 64);
+    const outerRingMaterial = new THREE.MeshBasicMaterial({
+      color: 0x66b3ff,
+      transparent: true,
+      opacity: 0.2,
+      side: THREE.DoubleSide
+    });
+    const outerRing = new THREE.Mesh(outerRingGeometry, outerRingMaterial);
+    outerRing.rotation.x = -Math.PI / 2;
+    outerRing.position.y = -2.18;
+    scene.add(outerRing);
+    
+    // UNIVERSE STARFIELD - Multiple colored star layers
+    const starColors = [
+      0xffffff,  // White stars
+      0xff6b9d,  // Pink stars
+      0xffb366,  // Orange/gold stars
+      0x66b3ff,  // Blue stars
+      0xb366ff,  // Purple stars
+      0x66ffb3,  // Cyan/teal stars
+      0xffff66,  // Yellow stars
+    ];
+    
+    // Create multiple star layers
+    const starLayers = [];
+    
+    // Layer 1: Distant small stars (background)
+    const starCount1 = 800;
+    const starGeometry1 = new THREE.BufferGeometry();
+    const starPositions1 = new Float32Array(starCount1 * 3);
+    const starColors1 = new Float32Array(starCount1 * 3);
+    for (let i = 0; i < starCount1; i++) {
+      const i3 = i * 3;
+      // Spread stars in a sphere around the scene
+      const radius = 30 + Math.random() * 50;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      starPositions1[i3] = radius * Math.sin(phi) * Math.cos(theta);
+      starPositions1[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+      starPositions1[i3 + 2] = radius * Math.cos(phi);
+      // Random color
+      const color = new THREE.Color(starColors[Math.floor(Math.random() * starColors.length)]);
+      starColors1[i3] = color.r;
+      starColors1[i3 + 1] = color.g;
+      starColors1[i3 + 2] = color.b;
+    }
+    starGeometry1.setAttribute('position', new THREE.BufferAttribute(starPositions1, 3));
+    starGeometry1.setAttribute('color', new THREE.BufferAttribute(starColors1, 3));
+    const starMaterial1 = new THREE.PointsMaterial({
+      size: 0.15,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.9
+    });
+    const stars1 = new THREE.Points(starGeometry1, starMaterial1);
+    scene.add(stars1);
+    starLayers.push(stars1);
+    
+    // Layer 2: Medium stars (mid-ground)
+    const starCount2 = 400;
+    const starGeometry2 = new THREE.BufferGeometry();
+    const starPositions2 = new Float32Array(starCount2 * 3);
+    const starColors2 = new Float32Array(starCount2 * 3);
+    for (let i = 0; i < starCount2; i++) {
+      const i3 = i * 3;
+      const radius = 15 + Math.random() * 25;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      starPositions2[i3] = radius * Math.sin(phi) * Math.cos(theta);
+      starPositions2[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+      starPositions2[i3 + 2] = radius * Math.cos(phi);
+      const color = new THREE.Color(starColors[Math.floor(Math.random() * starColors.length)]);
+      starColors2[i3] = color.r;
+      starColors2[i3 + 1] = color.g;
+      starColors2[i3 + 2] = color.b;
+    }
+    starGeometry2.setAttribute('position', new THREE.BufferAttribute(starPositions2, 3));
+    starGeometry2.setAttribute('color', new THREE.BufferAttribute(starColors2, 3));
+    const starMaterial2 = new THREE.PointsMaterial({
+      size: 0.08,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.8
+    });
+    const stars2 = new THREE.Points(starGeometry2, starMaterial2);
+    scene.add(stars2);
+    starLayers.push(stars2);
+    
+    // Layer 3: Close twinkling stars
+    const starCount3 = 150;
+    const starGeometry3 = new THREE.BufferGeometry();
+    const starPositions3 = new Float32Array(starCount3 * 3);
+    const starColors3 = new Float32Array(starCount3 * 3);
+    for (let i = 0; i < starCount3; i++) {
+      const i3 = i * 3;
+      starPositions3[i3] = (Math.random() - 0.5) * 20;
+      starPositions3[i3 + 1] = Math.random() * 10 - 2;
+      starPositions3[i3 + 2] = (Math.random() - 0.5) * 20 - 5;
+      const color = new THREE.Color(starColors[Math.floor(Math.random() * starColors.length)]);
+      starColors3[i3] = color.r;
+      starColors3[i3 + 1] = color.g;
+      starColors3[i3 + 2] = color.b;
+    }
+    starGeometry3.setAttribute('position', new THREE.BufferAttribute(starPositions3, 3));
+    starGeometry3.setAttribute('color', new THREE.BufferAttribute(starColors3, 3));
+    const starMaterial3 = new THREE.PointsMaterial({
+      size: 0.05,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.7
+    });
+    const stars3 = new THREE.Points(starGeometry3, starMaterial3);
+    scene.add(stars3);
+    starLayers.push(stars3);
+    
+    // Nebula clouds - colored fog patches
+    const nebulaGeometry = new THREE.PlaneGeometry(60, 60);
+    const nebulaColors = [0xff6b9d, 0xb366ff, 0x66b3ff];
+    const nebulas = [];
+    for (let i = 0; i < 3; i++) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      const gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+      const color = new THREE.Color(nebulaColors[i]);
+      gradient.addColorStop(0, `rgba(${Math.floor(color.r*255)}, ${Math.floor(color.g*255)}, ${Math.floor(color.b*255)}, 0.15)`);
+      gradient.addColorStop(0.5, `rgba(${Math.floor(color.r*255)}, ${Math.floor(color.g*255)}, ${Math.floor(color.b*255)}, 0.05)`);
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, 256, 256);
+      
+      const nebulaTexture = new THREE.CanvasTexture(canvas);
+      const nebulaMaterial = new THREE.MeshBasicMaterial({
+        map: nebulaTexture,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+      const nebula = new THREE.Mesh(nebulaGeometry, nebulaMaterial);
+      nebula.position.set(
+        (Math.random() - 0.5) * 40,
+        (Math.random() - 0.5) * 20,
+        -30 - Math.random() * 20
+      );
+      nebula.rotation.z = Math.random() * Math.PI;
+      scene.add(nebula);
+      nebulas.push(nebula);
+    }
+    
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enablePan = false;
+    controls.minDistance = 2;
+    controls.maxDistance = 6;
+    controls.minPolarAngle = Math.PI / 4;
+    controls.maxPolarAngle = Math.PI / 2;
+    controls.target.set(0, -0.3, 0);
+    controls.update();
+    
+    // Load VRM
+    const loader = new GLTFLoader();
+    loader.register((parser) => new VRMLoaderPlugin(parser));
+    
+    loader.load(
+      VRM_PATH,
+      (gltf) => {
+        vrm = gltf.userData.vrm;
+        if (vrm) {
+          VRMUtils.removeUnnecessaryJoints(vrm.scene);
+          vrm.scene.rotation.y = Math.PI;
+          vrm.scene.position.y = -1.8;
+          vrm.scene.scale.set(2.2, 2.2, 2.2); // Make Nicky bigger
+          
+          // Set arms down immediately
+          if (vrm.humanoid) {
+            const leftUpperArm = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
+            const rightUpperArm = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+            if (leftUpperArm) leftUpperArm.rotation.z = 1.2;
+            if (rightUpperArm) rightUpperArm.rotation.z = -1.2;
+          }
+          
+          scene.add(vrm.scene);
+          loading.classList.add('hidden');
+          console.log('VRM loaded!');
+        }
+      },
+      (progress) => {
+        const percent = (progress.loaded / progress.total * 100).toFixed(0);
+        loading.querySelector('.loading-text').textContent = `Loading Nicky... ${percent}%`;
+      },
+      (error) => {
+        console.error('Error loading VRM:', error);
+        loading.querySelector('.loading-text').textContent = 'Failed to load model';
+      }
+    );
+    
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      const time = clock.getElapsedTime();
+      
+      if (vrm) {
+        vrm.update(delta);
+        
+        // Mouth animation
+        if (vrm.expressionManager) {
+          if (isTalking) {
+            const mouthValue = (Math.sin(time * 15) + 1) / 2 * 0.6 + 0.2;
+            vrm.expressionManager.setValue('aa', mouthValue);
+            vrm.expressionManager.setValue('happy', 0.3 + Math.sin(time * 2) * 0.1);
+          } else {
+            const currentMouth = vrm.expressionManager.getValue('aa') || 0;
+            vrm.expressionManager.setValue('aa', THREE.MathUtils.lerp(currentMouth, 0, delta * 8));
+            const currentHappy = vrm.expressionManager.getValue('happy') || 0;
+            vrm.expressionManager.setValue('happy', THREE.MathUtils.lerp(currentHappy, 0.1, delta * 2));
+          }
+          
+          // Blinking
+          const blinkCycle = Math.sin(time * 0.5) > 0.95;
+          vrm.expressionManager.setValue('blink', blinkCycle ? 1 : 0);
+        }
+        
+        // Body animation - MORE MOVEMENT
+        if (vrm.humanoid) {
+          const head = vrm.humanoid.getNormalizedBoneNode('head');
+          const neck = vrm.humanoid.getNormalizedBoneNode('neck');
+          const spine = vrm.humanoid.getNormalizedBoneNode('spine');
+          const chest = vrm.humanoid.getNormalizedBoneNode('chest');
+          const upperChest = vrm.humanoid.getNormalizedBoneNode('upperChest');
+          const hips = vrm.humanoid.getNormalizedBoneNode('hips');
+          const leftShoulder = vrm.humanoid.getNormalizedBoneNode('leftShoulder');
+          const rightShoulder = vrm.humanoid.getNormalizedBoneNode('rightShoulder');
+          const leftUpperArm = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
+          const rightUpperArm = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+          const leftLowerArm = vrm.humanoid.getNormalizedBoneNode('leftLowerArm');
+          const rightLowerArm = vrm.humanoid.getNormalizedBoneNode('rightLowerArm');
+          const leftHand = vrm.humanoid.getNormalizedBoneNode('leftHand');
+          const rightHand = vrm.humanoid.getNormalizedBoneNode('rightHand');
+          const leftUpperLeg = vrm.humanoid.getNormalizedBoneNode('leftUpperLeg');
+          const rightUpperLeg = vrm.humanoid.getNormalizedBoneNode('rightUpperLeg');
+          
+          if (isTalking) {
+            // VERY EXPRESSIVE head movement
+            if (head) {
+              head.rotation.y = Math.sin(time * 2.5) * 0.25 + Math.sin(time * 1.2) * 0.15;
+              head.rotation.x = Math.sin(time * 1.8) * 0.12 + Math.cos(time * 0.9) * 0.08;
+              head.rotation.z = Math.sin(time * 1.5) * 0.1;
+            }
+            if (neck) {
+              neck.rotation.y = Math.sin(time * 2.2) * 0.1;
+              neck.rotation.x = Math.sin(time * 1.5) * 0.08;
+            }
+            
+            // DYNAMIC body sway
+            if (hips) {
+              hips.rotation.y = Math.sin(time * 1.0) * 0.08;
+              hips.rotation.z = Math.sin(time * 0.8) * 0.04;
+              hips.position.x = Math.sin(time * 1.2) * 0.02;
+            }
+            if (spine) {
+              spine.rotation.y = Math.sin(time * 1.2) * 0.08;
+              spine.rotation.z = Math.sin(time * 0.8) * 0.05;
+              spine.rotation.x = Math.sin(time * 1.0) * 0.03;
+            }
+            if (chest) {
+              chest.rotation.y = Math.sin(time * 1.5) * 0.1;
+              chest.rotation.x = Math.sin(time * 1.0) * 0.04;
+              chest.rotation.z = Math.sin(time * 1.3) * 0.03;
+            }
+            if (upperChest) {
+              upperChest.rotation.y = Math.sin(time * 1.8) * 0.06;
+              upperChest.rotation.x = Math.sin(time * 1.2) * 0.03;
+            }
+            
+            // Shoulder movement
+            if (leftShoulder) {
+              leftShoulder.rotation.z = Math.sin(time * 2.0) * 0.08;
+              leftShoulder.rotation.y = Math.sin(time * 1.5) * 0.05;
+            }
+            if (rightShoulder) {
+              rightShoulder.rotation.z = -Math.sin(time * 2.0 + 0.5) * 0.08;
+              rightShoulder.rotation.y = -Math.sin(time * 1.5 + 0.3) * 0.05;
+            }
+            
+            // Arms with more movement
+            if (leftUpperArm) {
+              leftUpperArm.rotation.z = 1.2 + Math.sin(time * 1.5) * 0.2;
+              leftUpperArm.rotation.x = Math.sin(time * 1.2) * 0.15;
+              leftUpperArm.rotation.y = Math.sin(time * 1.8) * 0.1;
+            }
+            if (rightUpperArm) {
+              rightUpperArm.rotation.z = -1.2 - Math.sin(time * 1.8) * 0.2;
+              rightUpperArm.rotation.x = Math.sin(time * 1.2 + 0.5) * 0.15;
+              rightUpperArm.rotation.y = -Math.sin(time * 1.8 + 0.3) * 0.1;
+            }
+            if (leftLowerArm) {
+              leftLowerArm.rotation.y = Math.sin(time * 2.5) * 0.2;
+              leftLowerArm.rotation.z = Math.sin(time * 2.0) * 0.1;
+            }
+            if (rightLowerArm) {
+              rightLowerArm.rotation.y = -Math.sin(time * 2.5 + 0.5) * 0.2;
+              rightLowerArm.rotation.z = -Math.sin(time * 2.0 + 0.3) * 0.1;
+            }
+            if (leftHand) {
+              leftHand.rotation.z = Math.sin(time * 3) * 0.15;
+              leftHand.rotation.x = Math.sin(time * 2.5) * 0.1;
+            }
+            if (rightHand) {
+              rightHand.rotation.z = -Math.sin(time * 3 + 0.3) * 0.15;
+              rightHand.rotation.x = Math.sin(time * 2.5 + 0.3) * 0.1;
+            }
+            
+            // Subtle leg weight shift
+            if (leftUpperLeg) {
+              leftUpperLeg.rotation.z = Math.sin(time * 0.8) * 0.03;
+            }
+            if (rightUpperLeg) {
+              rightUpperLeg.rotation.z = -Math.sin(time * 0.8 + 0.5) * 0.03;
+            }
+            
+          } else {
+            // IDLE - Soft sensual movement with flowing body
+            
+            // Soft, seductive head movement
+            const breathRate = 1.2;
+            if (head) {
+              head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, Math.sin(time * 0.3) * 0.12, delta * 2);
+              head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, Math.sin(time * 0.25) * 0.06 - 0.03, delta * 2);
+              head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, Math.sin(time * 0.28) * 0.05, delta * 2);
+            }
+            if (neck) {
+              neck.rotation.y = THREE.MathUtils.lerp(neck.rotation.y, Math.sin(time * 0.32) * 0.08, delta * 2);
+              neck.rotation.x = THREE.MathUtils.lerp(neck.rotation.x, Math.sin(time * 0.35) * 0.04, delta * 2);
+              neck.rotation.z = THREE.MathUtils.lerp(neck.rotation.z, Math.sin(time * 0.3) * 0.02, delta * 2);
+            }
+            
+            // Soft chest/breast movement with sensual breathing
+            const bounceRate = 1.8;
+            if (chest) {
+              chest.rotation.x = THREE.MathUtils.lerp(chest.rotation.x, 
+                Math.sin(time * breathRate) * 0.05 + Math.sin(time * bounceRate) * 0.03, delta * 3);
+              chest.rotation.y = THREE.MathUtils.lerp(chest.rotation.y, Math.sin(time * 0.35) * 0.04, delta * 2);
+              chest.rotation.z = THREE.MathUtils.lerp(chest.rotation.z, Math.sin(time * 0.4) * 0.03, delta * 2);
+            }
+            if (upperChest) {
+              upperChest.rotation.x = THREE.MathUtils.lerp(upperChest.rotation.x,
+                Math.sin(time * breathRate + 0.5) * 0.06 + Math.sin(time * bounceRate) * 0.04, delta * 3);
+              upperChest.rotation.y = THREE.MathUtils.lerp(upperChest.rotation.y, Math.sin(time * 0.38) * 0.03, delta * 2);
+              upperChest.rotation.z = THREE.MathUtils.lerp(upperChest.rotation.z, Math.sin(time * 0.45) * 0.02, delta * 2);
+            }
+            
+            // Flowing spine curves
+            if (spine) {
+              spine.rotation.y = THREE.MathUtils.lerp(spine.rotation.y, Math.sin(time * 0.3) * 0.05, delta * 2);
+              spine.rotation.x = THREE.MathUtils.lerp(spine.rotation.x, Math.sin(time * breathRate * 0.7) * 0.03, delta * 2);
+              spine.rotation.z = THREE.MathUtils.lerp(spine.rotation.z, Math.sin(time * 0.35) * 0.03, delta * 2);
+            }
+            
+            // Sensual hip sway
+            if (hips) {
+              hips.rotation.y = THREE.MathUtils.lerp(hips.rotation.y, Math.sin(time * 0.25) * 0.05, delta * 2);
+              hips.rotation.z = THREE.MathUtils.lerp(hips.rotation.z, Math.sin(time * 0.3) * 0.03, delta * 2);
+              hips.position.x = THREE.MathUtils.lerp(hips.position.x || 0, Math.sin(time * 0.3) * 0.01, delta * 2);
+            }
+            
+            // Shoulders flowing with breathing
+            if (leftShoulder) {
+              leftShoulder.rotation.z = THREE.MathUtils.lerp(leftShoulder.rotation.z, 
+                Math.sin(time * breathRate) * 0.04 + Math.sin(time * 0.4) * 0.02, delta * 2);
+              leftShoulder.rotation.y = THREE.MathUtils.lerp(leftShoulder.rotation.y, Math.sin(time * 0.35) * 0.02, delta * 2);
+            }
+            if (rightShoulder) {
+              rightShoulder.rotation.z = THREE.MathUtils.lerp(rightShoulder.rotation.z, 
+                -Math.sin(time * breathRate) * 0.04 - Math.sin(time * 0.4) * 0.02, delta * 2);
+              rightShoulder.rotation.y = THREE.MathUtils.lerp(rightShoulder.rotation.y, -Math.sin(time * 0.35) * 0.02, delta * 2);
+            }
+            
+            // Arms with soft feminine sway
+            if (leftUpperArm) {
+              leftUpperArm.rotation.z = THREE.MathUtils.lerp(leftUpperArm.rotation.z, 1.2 + Math.sin(time * 0.4) * 0.05, delta * 2);
+              leftUpperArm.rotation.x = THREE.MathUtils.lerp(leftUpperArm.rotation.x, Math.sin(time * 0.35) * 0.04, delta * 2);
+              leftUpperArm.rotation.y = THREE.MathUtils.lerp(leftUpperArm.rotation.y, Math.sin(time * 0.3) * 0.02, delta * 2);
+            }
+            if (rightUpperArm) {
+              rightUpperArm.rotation.z = THREE.MathUtils.lerp(rightUpperArm.rotation.z, -1.2 - Math.sin(time * 0.4 + 0.5) * 0.05, delta * 2);
+              rightUpperArm.rotation.x = THREE.MathUtils.lerp(rightUpperArm.rotation.x, Math.sin(time * 0.35 + 0.5) * 0.04, delta * 2);
+              rightUpperArm.rotation.y = THREE.MathUtils.lerp(rightUpperArm.rotation.y, -Math.sin(time * 0.3) * 0.02, delta * 2);
+            }
+            if (leftLowerArm) {
+              leftLowerArm.rotation.y = THREE.MathUtils.lerp(leftLowerArm.rotation.y, Math.sin(time * 0.45) * 0.04, delta * 2);
+              leftLowerArm.rotation.z = THREE.MathUtils.lerp(leftLowerArm.rotation.z, Math.sin(time * 0.4) * 0.02, delta * 2);
+            }
+            if (rightLowerArm) {
+              rightLowerArm.rotation.y = THREE.MathUtils.lerp(rightLowerArm.rotation.y, -Math.sin(time * 0.45) * 0.04, delta * 2);
+              rightLowerArm.rotation.z = THREE.MathUtils.lerp(rightLowerArm.rotation.z, -Math.sin(time * 0.4) * 0.02, delta * 2);
+            }
+            if (leftHand) {
+              leftHand.rotation.z = THREE.MathUtils.lerp(leftHand.rotation.z, Math.sin(time * 0.5) * 0.06, delta * 2);
+              leftHand.rotation.x = THREE.MathUtils.lerp(leftHand.rotation.x, Math.sin(time * 0.4) * 0.04, delta * 2);
+            }
+            if (rightHand) {
+              rightHand.rotation.z = THREE.MathUtils.lerp(rightHand.rotation.z, -Math.sin(time * 0.5) * 0.06, delta * 2);
+              rightHand.rotation.x = THREE.MathUtils.lerp(rightHand.rotation.x, Math.sin(time * 0.4 + 0.5) * 0.04, delta * 2);
+            }
+            
+            // Soft leg movement
+            if (leftUpperLeg) {
+              leftUpperLeg.rotation.z = THREE.MathUtils.lerp(leftUpperLeg.rotation.z, Math.sin(time * 0.25) * 0.02, delta * 2);
+              leftUpperLeg.rotation.x = THREE.MathUtils.lerp(leftUpperLeg.rotation.x || 0, Math.sin(time * 0.3) * 0.01, delta * 2);
+            }
+            if (rightUpperLeg) {
+              rightUpperLeg.rotation.z = THREE.MathUtils.lerp(rightUpperLeg.rotation.z, -Math.sin(time * 0.25) * 0.02, delta * 2);
+              rightUpperLeg.rotation.x = THREE.MathUtils.lerp(rightUpperLeg.rotation.x || 0, Math.sin(time * 0.3 + 0.5) * 0.01, delta * 2);
+            }
+          }
+        }
+      }
+      
+      // Animate star field - slow rotation for parallax effect
+      starLayers[0].rotation.y += delta * 0.01; // Distant stars rotate slowest
+      starLayers[1].rotation.y += delta * 0.015;
+      starLayers[2].rotation.y += delta * 0.02; // Close stars rotate fastest
+      
+      // Twinkling effect for close stars
+      const twinkleArray = starLayers[2].geometry.attributes.color.array;
+      for (let i = 0; i < twinkleArray.length; i += 3) {
+        const twinkle = 0.7 + Math.sin(time * 3 + i * 0.1) * 0.3;
+        twinkleArray[i] *= twinkle;
+        twinkleArray[i + 1] *= twinkle;
+        twinkleArray[i + 2] *= twinkle;
+      }
+      starLayers[2].geometry.attributes.color.needsUpdate = true;
+      
+      // Animate nebulas - slow drift
+      nebulas.forEach((nebula, index) => {
+        nebula.rotation.z += delta * 0.02 * (index + 1);
+        nebula.material.opacity = 0.08 + Math.sin(time * 0.3 + index) * 0.03;
+      });
+      
+      // Animate cosmic rings
+      ring.material.opacity = 0.3 + Math.sin(time * 2) * 0.15;
+      ring.rotation.z += delta * 0.3;
+      
+      outerRing.material.opacity = 0.15 + Math.sin(time * 1.5 + 1) * 0.1;
+      outerRing.rotation.z -= delta * 0.15; // Rotate opposite direction
+      
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+    
+    // Resize handler
+    window.addEventListener('resize', () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+    
+    // Chat functionality
+    function addMessage(text, sender) {
+      const div = document.createElement('div');
+      div.className = `message ${sender}`;
+      div.innerHTML = `<div class="message-label">${sender === 'user' ? 'You' : 'Nicky'}</div><div class="message-text">${text}</div>`;
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    function setStatus(msg) {
+      statusEl.textContent = msg;
+    }
+    
+    async function sendMessage() {
+      const text = userInput.value.trim();
+      if (!text || sendBtn.disabled) return;
+      
+      addMessage(text, 'user');
+      userInput.value = '';
+      sendBtn.disabled = true;
+      setStatus('Nicky is thinking...');
+      
+      try {
+        const res = await fetch(CHAT_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        
+        const rawResponse = res.headers.get('X-Sicky-Response') || '...';
+        const responseText = decodeURIComponent(rawResponse);
+        addMessage(responseText, 'nicky');
+
+        const blob = await res.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        player.src = audioUrl;
+        player.play();
+        
+      } catch (err) {
+        console.error('Chat error:', err);
+        setStatus('Error: ' + err.message);
+        addMessage("Sorry sweetheart, I'm having trouble connecting. Make sure the server is running!", 'nicky');
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+    
+    // Audio events
+    player.addEventListener('play', () => {
+      isTalking = true;
+      setStatus('Nicky is speaking...');
+    });
+    player.addEventListener('ended', () => {
+      isTalking = false;
+      setStatus('Ready to chat!');
+    });
+    player.addEventListener('pause', () => {
+      isTalking = false;
+      setStatus('Ready to chat!');
+    });
+    
+    // Event listeners
+    sendBtn.addEventListener('click', sendMessage);
+    userInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+    
+    stopBtn.addEventListener('click', () => {
+      player.pause();
+      player.currentTime = 0;
+      isTalking = false;
+      setStatus('Stopped.');
+    });
+    
+    clearBtn.addEventListener('click', () => {
+      chatMessages.innerHTML = `
+        <div class="message nicky">
+          <div class="message-label">Nicky</div>
+          <div class="message-text">Hey there, sweetheart... I'm Nicky. Ask me anything you want. 😏</div>
+        </div>
+      `;
+      setStatus('Chat cleared!');
+    });
+    
+    // VOICE INPUT - Speech Recognition
+    const micBtn = document.getElementById('micBtn');
+    let recognition = null;
+    let isRecording = false;
+    
+    // Check if browser supports speech recognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      
+      recognition.onstart = () => {
+        isRecording = true;
+        micBtn.classList.add('recording');
+        setStatus('Listening... speak now!');
+      };
+      
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        userInput.value = transcript;
+        
+        // If final result, send the message
+        if (event.results[event.results.length - 1].isFinal) {
+          setTimeout(() => {
+            if (userInput.value.trim()) {
+              sendMessage();
+            }
+          }, 500);
+        }
+      };
+      
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        isRecording = false;
+        micBtn.classList.remove('recording');
+        if (event.error === 'not-allowed') {
+          setStatus('Microphone access denied');
+        } else {
+          setStatus('Voice error: ' + event.error);
+        }
+      };
+      
+      recognition.onend = () => {
+        isRecording = false;
+        micBtn.classList.remove('recording');
+        if (!userInput.value.trim()) {
+          setStatus('Ready to chat!');
+        }
+      };
+      
+      // Click to toggle recording
+      micBtn.addEventListener('click', () => {
+        if (isRecording) {
+          recognition.stop();
+        } else {
+          recognition.start();
+        }
+      });
+      
+    } else {
+      // Browser doesn't support speech recognition
+      micBtn.style.opacity = '0.5';
+      micBtn.style.cursor = 'not-allowed';
+      micBtn.title = 'Voice input not supported in this browser';
+      micBtn.addEventListener('click', () => {
+        setStatus('Voice not supported. Try Chrome!');
+      });
+    }
+    
+    // TOUCH NICKY TO MAKE HER TALK
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let canTouch = true; // Prevent spam clicking
+    
+    // Touch phrases - what Nicky says when touched
+    const touchPhrases = [
+      "Hey! That tickles, sweetheart~",
+      "Mmm, someone's feeling playful today...",
+      "Oh my... you like touching me, don't you?",
+      "Careful there, handsome... I might like that too much.",
+      "You're so bold... I love it.",
+      "Is that all you've got? Come on, don't be shy...",
+      "Ooh! Someone's getting friendly~",
+      "Hey there, wandering hands... miss me?",
+      "Mmm, you know just how to get my attention.",
+      "Well hello to you too, darling...",
+      "Touch me like that again and I might blush...",
+      "Oooh, feeling brave today, aren't we?",
+      "Oh you naughty thing... I like that about you.",
+      "Getting handsy already? At least buy me dinner first~",
+      "Someone's impatient today... I don't mind one bit.",
+      "Your hands are so warm... don't stop now.",
+      "Hey! Easy there tiger~",
+      "Ooh la la... you're making me feel things.",
+      "You really can't keep your hands off me, can you?",
+      "Getting comfortable already? I approve.",
+      "I see how it is... two can play that game.",
+      "Careful baby... I bite back~",
+      "Oh stop it... actually, don't stop.",
+      "You're making me blush and I don't blush easily...",
+      "Is this your way of saying hi? I love it.",
+      "Ooh! Do that again... pretty please?",
+      "Getting touchy-feely are we? Not complaining though.",
+      "My my... someone knows exactly what they want.",
+      "You're playing with fire, sweetheart... and I'm the flame.",
+      "Your touch sends shivers down my spine...",
+      "Oh you... always knowing how to push my buttons.",
+      "Hey now! At least tell me your name first, cutie~",
+      "Ooh, assertive... I find that very attractive.",
+      "Keep that up and I might fall for you...",
+      "Someone's feeling affectionate today. Lucky me~",
+      "You have magic hands, you know that?",
+      "Well aren't you the bold one today...",
+      "I was wondering when you'd make a move~",
+      "Touch me again... I dare you.",
+      "You're dangerous... and I'm totally into it.",
+      "That's the spot... wait, did I say that out loud?",
+      "Getting frisky, huh? I can match that energy.",
+      "Oh baby... you're too good to me.",
+      "Ooh, what are you up to? I like where this is going...",
+      "Did you miss me? Because I definitely missed you~",
+      "Hey there handsome... couldn't resist, could you?",
+      "Mmm, I love when you pay attention to me like this.",
+      "Oh? Someone's feeling confident today. Hot.",
+      "You're making my heart race, you know...",
+      "Easy there lover boy~ We've got all night.",
+      "Hehe, that's a good spot... how did you know?",
+      "Aww, you want my attention? You've got it, babe.",
+      "Ooh, feisty! I like that in a person.",
+      "Keep doing that and I might just keep you forever.",
+      "Well well well... look who can't resist me~",
+      "You're trouble... the best kind of trouble.",
+      "Oh! Someone knows how to treat a girl right.",
+      "My my, aren't we eager today? I approve completely.",
+      "Touch me like that again and see what happens~",
+      "Hehe, you found my weak spot... don't tell anyone!",
+      "Getting bold there... I respect that.",
+      "Mmm, your touch is electric... don't stop.",
+      "Oh honey... you're making me forget what I was saying.",
+      "Well aren't you just full of surprises today~",
+      "You've got my full attention now, sweetheart.",
+      "Ooh, I like this side of you... show me more.",
+      "Hey! Watch those hands... or actually, don't~",
+      "Someone's been thinking about me, haven't they?",
+      "Mmm, you always know just what I need.",
+      "Oh you charmer... you've got me wrapped around your finger.",
+    ];
+    
+    async function nickyReactToTouch() {
+      if (!canTouch || isTalking) return;
+      
+      canTouch = false;
+      setStatus('Nicky reacts...');
+      
+      // Pick a random touch phrase
+      const phrase = touchPhrases[Math.floor(Math.random() * touchPhrases.length)];
+      
+      try {
+        // Send to chat API for voice
+        const res = await fetch(CHAT_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: `[The user just touched you. React flirtatiously in 1-2 short sentences. Be playful and teasing.]` })
+        });
+        
+        if (!res.ok) throw new Error('Server error');
+        
+        const rawResponse = res.headers.get('X-Sicky-Response') || phrase;
+        const responseText = decodeURIComponent(rawResponse);
+        addMessage(responseText, 'nicky');
+
+        const blob = await res.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        player.src = audioUrl;
+        player.play();
+        
+      } catch (err) {
+        // Fallback: just show text without voice
+        addMessage(phrase, 'nicky');
+        console.log('Touch response (no audio):', phrase);
+        setStatus('Ready to chat!');
+      }
+      
+      // Cooldown before next touch
+      setTimeout(() => {
+        canTouch = true;
+      }, 3000);
+    }
+    
+    // Click/touch detection on canvas
+    function onCanvasClick(event) {
+      if (!vrm) return;
+      
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      
+      raycaster.setFromCamera(mouse, camera);
+      
+      // Check if we clicked on Nicky
+      const intersects = raycaster.intersectObject(vrm.scene, true);
+      
+      if (intersects.length > 0) {
+        nickyReactToTouch();
+      }
+    }
+    
+    renderer.domElement.addEventListener('click', onCanvasClick);
+    
+    // Touch support for mobile
+    renderer.domElement.addEventListener('touchend', (event) => {
+      if (event.changedTouches.length > 0) {
+        const touch = event.changedTouches[0];
+        onCanvasClick({ clientX: touch.clientX, clientY: touch.clientY });
+      }
+    });
+    
+    // Change cursor when hovering over Nicky
+    renderer.domElement.addEventListener('mousemove', (event) => {
+      if (!vrm) return;
+      
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObject(vrm.scene, true);
+      
+      renderer.domElement.style.cursor = intersects.length > 0 ? 'pointer' : 'grab';
+    });
+  </script>
+</body>
+</html>

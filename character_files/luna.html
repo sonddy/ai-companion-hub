@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Luna - 3D AI Assistant</title>
+  
+  <!-- Import maps for ES modules -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+      "@pixiv/three-vrm": "https://unpkg.com/@pixiv/three-vrm@2.1.0/lib/three-vrm.module.js"
+    }
+  }
+  </script>
+  
+  <style>
+    :root {
+      --bg: #ffeef5;
+      --card: #fff5f8;
+      --accent: #ff6b9d;
+      --accent-2: #ffb3d0;
+      --text: #6b4a5a;
+      --muted: #b08090;
+      --user-bg: #ffe0eb;
+      --luna-bg: #ff8fbf;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #ffeef5 0%, #ffe0f0 50%, #ffd6e8 100%);
+      color: var(--text);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    #app {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      position: relative;
+    }
+    #canvas-container {
+      flex: 1;
+      position: relative;
+    }
+    #canvas-container canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .title-overlay {
+      position: absolute;
+      top: 30px;
+      left: 30px;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .title-overlay h1 {
+      font-size: 48px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ff6b9d, #ff8fbf, #ffb3d0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+      text-shadow: 0 0 40px rgba(255, 107, 157, 0.4);
+    }
+    .title-overlay p {
+      font-size: 16px;
+      color: rgba(107, 74, 90, 0.7);
+    }
+    .loading-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 20;
+    }
+    .loading-overlay.hidden { display: none; }
+    .loading-text {
+      color: #ff6b9d;
+      font-size: 20px;
+      font-weight: 600;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+    
+    /* Chat Interface */
+    .chat-interface {
+      position: fixed;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 380px;
+      max-height: 80vh;
+      background: rgba(255, 245, 248, 0.95);
+      border: 2px solid rgba(255, 107, 157, 0.4);
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(255, 107, 157, 0.2), 0 0 40px rgba(255, 143, 191, 0.15);
+      backdrop-filter: blur(15px);
+      z-index: 100;
+    }
+    .chat-header {
+      padding: 16px 20px;
+      border-bottom: 2px solid rgba(255, 107, 157, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(135deg, rgba(255, 230, 240, 0.8), rgba(255, 220, 235, 0.8));
+      border-radius: 18px 18px 0 0;
+    }
+    .chat-header h2 {
+      font-size: 18px;
+      font-weight: 600;
+      background: linear-gradient(90deg, #ff6b9d, #ff8fbf);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .status {
+      font-size: 12px;
+      color: #ff6b9d;
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 350px;
+    }
+    .message {
+      padding: 12px 16px;
+      border-radius: 12px;
+      max-width: 85%;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .message.user {
+      background: linear-gradient(135deg, #ffe0eb, #ffd0e0);
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+      border: 1px solid rgba(255, 107, 157, 0.3);
+      color: #6b4a5a;
+    }
+    .message.luna {
+      background: linear-gradient(135deg, #ff8fbf, #ff6b9d);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      border: 1px solid rgba(255, 143, 191, 0.3);
+      color: white;
+    }
+    .message-label {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+    .message-text {
+      line-height: 1.5;
+      font-size: 14px;
+    }
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      padding: 4px 0;
+    }
+    .typing-indicator span {
+      width: 8px;
+      height: 8px;
+      background: linear-gradient(135deg, #ff6b9d, #ff8fbf, #ffb3d0);
+      border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out;
+    }
+    .typing-indicator span:nth-child(1) { animation-delay: 0s; }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-6px); }
+    }
+    .chat-input-area {
+      padding: 16px;
+      border-top: 2px solid rgba(255, 107, 157, 0.2);
+      display: flex;
+      gap: 10px;
+      background: rgba(255, 240, 245, 0.5);
+    }
+    .chat-input-area input {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 15px;
+      border: 2px solid rgba(255, 107, 157, 0.3);
+      background: white;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      font-family: inherit;
+    }
+    .chat-input-area input:focus {
+      border-color: #ff6b9d;
+      box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.2);
+    }
+    button {
+      padding: 12px 20px;
+      border-radius: 15px;
+      border: none;
+      background: linear-gradient(135deg, #ff6b9d, #ff8fbf);
+      color: white;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+      font-family: inherit;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(255, 107, 157, 0.5);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .chat-controls {
+      padding: 0 16px 16px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    .chat-controls button {
+      background: rgba(255, 107, 157, 0.1);
+      color: #ff6b9d;
+      box-shadow: none;
+      padding: 8px 16px;
+    }
+    .mic-btn {
+      padding: 12px 16px;
+      font-size: 18px;
+      background: linear-gradient(135deg, #ff6b9d, #ff8fbf);
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .mic-btn:hover {
+      transform: scale(1.1);
+    }
+    .mic-btn.recording {
+      background: linear-gradient(135deg, #ff3366, #ff6699);
+      animation: mic-pulse 1s ease-in-out infinite;
+      box-shadow: 0 0 20px rgba(255, 51, 102, 0.6);
+    }
+    @keyframes mic-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    .chat-messages::-webkit-scrollbar { width: 6px; }
+    .chat-messages::-webkit-scrollbar-track { background: rgba(255, 107, 157, 0.1); border-radius: 3px; }
+    .chat-messages::-webkit-scrollbar-thumb { background: rgba(255, 143, 191, 0.5); border-radius: 3px; }
+    
+    /* Back button */
+    .back-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      padding: 10px 20px;
+      background: rgba(255, 107, 157, 0.2);
+      border: 2px solid rgba(255, 107, 157, 0.4);
+      color: #ff6b9d;
+      border-radius: 15px;
+      cursor: pointer;
+      font-size: 14px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    .back-btn:hover {
+      background: rgba(255, 107, 157, 0.3);
+      box-shadow: 0 0 20px rgba(255, 107, 157, 0.3);
+    }
+    
+    @media (max-width: 900px) {
+      .chat-interface {
+        right: 10px;
+        left: 10px;
+        width: auto;
+        top: auto;
+        bottom: 10px;
+        transform: none;
+        max-height: 50vh;
+      }
+      .title-overlay h1 { font-size: 32px; }
+    }
+  </style>
+</head>
+<body>
+  <a href="main.html" class="back-btn">← Back to Hub</a>
+  
+  <div id="app">
+    <div id="canvas-container">
+      <div class="title-overlay">
+        <h1>Luna</h1>
+        <p>Your Friendly AI Assistant</p>
+      </div>
+      <div class="loading-overlay" id="loading">
+        <div class="loading-text">Loading Luna...</div>
+      </div>
+    </div>
+
+    <div class="chat-interface">
+      <div class="chat-header">
+        <h2>Chat with Luna</h2>
+        <span class="status" id="status">Ready to help!</span>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="message luna">
+          <div class="message-label">Luna</div>
+          <div class="message-text">Hi there! I'm Luna, your friendly assistant! How can I help you today? ✨</div>
+        </div>
+      </div>
+      <div class="chat-input-area">
+        <input type="text" id="userInput" placeholder="Ask Luna anything..." autofocus />
+        <button id="micBtn" class="mic-btn" title="Click to talk">🎤</button>
+        <button id="sendBtn">Send</button>
+          </div>
+      <div class="chat-controls">
+        <button id="stopBtn">Stop</button>
+        <button id="clearBtn">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <audio id="player" hidden></audio>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+    
+    const CHAT_ENDPOINT = '/.netlify/functions/luna-chat';
+    const VRM_PATH = 'models/luna.vrm';
+    
+    // State
+    let vrm = null;
+    let isTalking = false;
+    let clock = new THREE.Clock();
+    
+    // DOM elements
+    const container = document.getElementById('canvas-container');
+    const loading = document.getElementById('loading');
+    const chatMessages = document.getElementById('chatMessages');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const statusEl = document.getElementById('status');
+    const player = document.getElementById('player');
+    
+    // Three.js setup - Cute pink room
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xffe8f0); // Soft pink background
+    
+    const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
+    camera.position.set(0, 0.5, 5);
+    
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+    
+    // Lighting - Warm pink/soft theme
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight1.position.set(5, 5, 5);
+    dirLight1.castShadow = true;
+    scene.add(dirLight1);
+    
+    const dirLight2 = new THREE.DirectionalLight(0xff8fbf, 0.5); // Pink light
+    dirLight2.position.set(-5, 5, -5);
+    scene.add(dirLight2);
+    
+    const pointLight = new THREE.PointLight(0xffb3d0, 0.6); // Soft pink glow
+    pointLight.position.set(0, 2, 3);
+    scene.add(pointLight);
+    
+    const rimLight = new THREE.DirectionalLight(0xff6b9d, 0.3); // Pink rim
+    rimLight.position.set(0, 3, -3);
+    scene.add(rimLight);
+    
+    // Cute circular rug - pink theme
+    const floorGeometry = new THREE.CircleGeometry(4, 64);
+    const floorMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffb3d0,
+      transparent: true,
+      opacity: 0.6,
+      metalness: 0.1,
+      roughness: 0.8,
+      emissive: 0xff8fbf,
+      emissiveIntensity: 0.1
+    });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -2.2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+    
+    // Cute pink ring decoration
+    const ringGeometry = new THREE.RingGeometry(1.5, 1.7, 64);
+    const ringMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff6b9d,
+      transparent: true,
+      opacity: 0.5,
+      side: THREE.DoubleSide
+    });
+    const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = -2.15;
+    scene.add(ring);
+    
+    // Outer decorative ring - soft pink
+    const outerRingGeometry = new THREE.RingGeometry(2.5, 2.6, 64);
+    const outerRingMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffb3d0,
+      transparent: true,
+      opacity: 0.3,
+      side: THREE.DoubleSide
+    });
+    const outerRing = new THREE.Mesh(outerRingGeometry, outerRingMaterial);
+    outerRing.rotation.x = -Math.PI / 2;
+    outerRing.position.y = -2.18;
+    scene.add(outerRing);
+    
+    // CUTE ROOM DECORATIONS - Floating hearts and sparkles
+    const sparkleColors = [
+      0xff6b9d,  // Pink
+      0xffb3d0,  // Light pink
+      0xff8fbf,  // Medium pink
+      0xffd0e0,  // Soft pink
+      0xffffff,  // White sparkles
+    ];
+    
+    const sparkleLayers = [];
+    
+    // Layer 1: Background sparkles
+    const sparkleCount1 = 200;
+    const sparkleGeometry1 = new THREE.BufferGeometry();
+    const sparklePositions1 = new Float32Array(sparkleCount1 * 3);
+    const sparkleColorsArr1 = new Float32Array(sparkleCount1 * 3);
+    for (let i = 0; i < sparkleCount1; i++) {
+      const i3 = i * 3;
+      sparklePositions1[i3] = (Math.random() - 0.5) * 30;
+      sparklePositions1[i3 + 1] = Math.random() * 15 - 3;
+      sparklePositions1[i3 + 2] = -10 - Math.random() * 20;
+      const color = new THREE.Color(sparkleColors[Math.floor(Math.random() * sparkleColors.length)]);
+      sparkleColorsArr1[i3] = color.r;
+      sparkleColorsArr1[i3 + 1] = color.g;
+      sparkleColorsArr1[i3 + 2] = color.b;
+    }
+    sparkleGeometry1.setAttribute('position', new THREE.BufferAttribute(sparklePositions1, 3));
+    sparkleGeometry1.setAttribute('color', new THREE.BufferAttribute(sparkleColorsArr1, 3));
+    const sparkleMaterial1 = new THREE.PointsMaterial({
+      size: 0.15,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.8
+    });
+    const sparkles1 = new THREE.Points(sparkleGeometry1, sparkleMaterial1);
+    scene.add(sparkles1);
+    sparkleLayers.push(sparkles1);
+    
+    // Layer 2: Mid-range sparkles
+    const sparkleCount2 = 100;
+    const sparkleGeometry2 = new THREE.BufferGeometry();
+    const sparklePositions2 = new Float32Array(sparkleCount2 * 3);
+    const sparkleColorsArr2 = new Float32Array(sparkleCount2 * 3);
+    for (let i = 0; i < sparkleCount2; i++) {
+      const i3 = i * 3;
+      sparklePositions2[i3] = (Math.random() - 0.5) * 15;
+      sparklePositions2[i3 + 1] = Math.random() * 8 - 1;
+      sparklePositions2[i3 + 2] = -5 - Math.random() * 10;
+      const color = new THREE.Color(sparkleColors[Math.floor(Math.random() * sparkleColors.length)]);
+      sparkleColorsArr2[i3] = color.r;
+      sparkleColorsArr2[i3 + 1] = color.g;
+      sparkleColorsArr2[i3 + 2] = color.b;
+    }
+    sparkleGeometry2.setAttribute('position', new THREE.BufferAttribute(sparklePositions2, 3));
+    sparkleGeometry2.setAttribute('color', new THREE.BufferAttribute(sparkleColorsArr2, 3));
+    const sparkleMaterial2 = new THREE.PointsMaterial({
+      size: 0.1,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.7
+    });
+    const sparkles2 = new THREE.Points(sparkleGeometry2, sparkleMaterial2);
+    scene.add(sparkles2);
+    sparkleLayers.push(sparkles2);
+    
+    // Floating hearts - 3D heart shapes
+    const hearts = [];
+    function createHeartShape() {
+      const shape = new THREE.Shape();
+      const x = 0, y = 0;
+      shape.moveTo(x, y + 0.25);
+      shape.bezierCurveTo(x, y + 0.25, x - 0.25, y, x - 0.25, y);
+      shape.bezierCurveTo(x - 0.25, y - 0.25, x, y - 0.35, x, y - 0.5);
+      shape.bezierCurveTo(x, y - 0.35, x + 0.25, y - 0.25, x + 0.25, y);
+      shape.bezierCurveTo(x + 0.25, y, x, y + 0.25, x, y + 0.25);
+      return shape;
+    }
+    
+    const heartShape = createHeartShape();
+    const heartGeometry = new THREE.ExtrudeGeometry(heartShape, {
+      depth: 0.1,
+      bevelEnabled: true,
+      bevelThickness: 0.02,
+      bevelSize: 0.02,
+      bevelSegments: 2
+    });
+    
+    for (let i = 0; i < 15; i++) {
+      const heartMaterial = new THREE.MeshStandardMaterial({
+        color: sparkleColors[Math.floor(Math.random() * 3)],
+        transparent: true,
+        opacity: 0.6 + Math.random() * 0.3,
+        emissive: 0xff6b9d,
+        emissiveIntensity: 0.2
+      });
+      const heart = new THREE.Mesh(heartGeometry, heartMaterial);
+      heart.position.set(
+        (Math.random() - 0.5) * 20,
+        Math.random() * 10 - 2,
+        -8 - Math.random() * 15
+      );
+      heart.rotation.z = Math.PI;
+      heart.scale.set(0.3 + Math.random() * 0.4, 0.3 + Math.random() * 0.4, 0.3 + Math.random() * 0.4);
+      heart.userData = {
+        floatSpeed: 0.3 + Math.random() * 0.5,
+        floatOffset: Math.random() * Math.PI * 2,
+        rotateSpeed: 0.2 + Math.random() * 0.3
+      };
+      scene.add(heart);
+      hearts.push(heart);
+    }
+    
+    // Cute cloud puffs in background
+    const clouds = [];
+    const cloudGeometry = new THREE.SphereGeometry(1, 16, 16);
+    for (let i = 0; i < 5; i++) {
+      const cloudGroup = new THREE.Group();
+      const cloudMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.3,
+        emissive: 0xffb3d0,
+        emissiveIntensity: 0.1
+      });
+      
+      // Create cloud from multiple spheres
+      for (let j = 0; j < 4; j++) {
+        const puff = new THREE.Mesh(cloudGeometry, cloudMaterial);
+        puff.position.set(
+          (Math.random() - 0.5) * 2,
+          (Math.random() - 0.5) * 0.5,
+          (Math.random() - 0.5) * 0.5
+        );
+        puff.scale.set(
+          0.5 + Math.random() * 0.5,
+          0.4 + Math.random() * 0.3,
+          0.4 + Math.random() * 0.3
+        );
+        cloudGroup.add(puff);
+      }
+      
+      cloudGroup.position.set(
+        (Math.random() - 0.5) * 25,
+        3 + Math.random() * 5,
+        -15 - Math.random() * 10
+      );
+      cloudGroup.userData = { driftSpeed: 0.1 + Math.random() * 0.1 };
+      scene.add(cloudGroup);
+      clouds.push(cloudGroup);
+    }
+    
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enablePan = false;
+    controls.minDistance = 2;
+    controls.maxDistance = 6;
+    controls.minPolarAngle = Math.PI / 4;
+    controls.maxPolarAngle = Math.PI / 2;
+    controls.target.set(0, -0.3, 0);
+    controls.update();
+    
+    // Load VRM
+    const loader = new GLTFLoader();
+    loader.register((parser) => new VRMLoaderPlugin(parser));
+    
+    loader.load(
+      VRM_PATH,
+      (gltf) => {
+        vrm = gltf.userData.vrm;
+        if (vrm) {
+          VRMUtils.removeUnnecessaryJoints(vrm.scene);
+          vrm.scene.rotation.y = Math.PI;
+          vrm.scene.position.y = -1.8;
+          vrm.scene.scale.set(2.2, 2.2, 2.2);
+          
+          // Set arms down immediately
+          if (vrm.humanoid) {
+            const leftUpperArm = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
+            const rightUpperArm = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+            if (leftUpperArm) leftUpperArm.rotation.z = 1.2;
+            if (rightUpperArm) rightUpperArm.rotation.z = -1.2;
+          }
+          
+          scene.add(vrm.scene);
+          loading.classList.add('hidden');
+          console.log('VRM loaded!');
+        }
+      },
+      (progress) => {
+        const percent = (progress.loaded / progress.total * 100).toFixed(0);
+        loading.querySelector('.loading-text').textContent = `Loading Luna... ${percent}%`;
+      },
+      (error) => {
+        console.error('Error loading VRM:', error);
+        loading.querySelector('.loading-text').textContent = 'Failed to load model';
+      }
+    );
+    
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      const time = clock.getElapsedTime();
+      
+      if (vrm) {
+        vrm.update(delta);
+        
+        // Mouth animation
+        if (vrm.expressionManager) {
+          if (isTalking) {
+            const mouthValue = (Math.sin(time * 15) + 1) / 2 * 0.6 + 0.2;
+            vrm.expressionManager.setValue('aa', mouthValue);
+            vrm.expressionManager.setValue('happy', 0.4 + Math.sin(time * 2) * 0.1);
+          } else {
+            const currentMouth = vrm.expressionManager.getValue('aa') || 0;
+            vrm.expressionManager.setValue('aa', THREE.MathUtils.lerp(currentMouth, 0, delta * 8));
+            const currentHappy = vrm.expressionManager.getValue('happy') || 0;
+            vrm.expressionManager.setValue('happy', THREE.MathUtils.lerp(currentHappy, 0.2, delta * 2));
+          }
+          
+          // Blinking
+          const blinkCycle = Math.sin(time * 0.5) > 0.95;
+          vrm.expressionManager.setValue('blink', blinkCycle ? 1 : 0);
+        }
+        
+        // Body animation
+        if (vrm.humanoid) {
+          const head = vrm.humanoid.getNormalizedBoneNode('head');
+          const neck = vrm.humanoid.getNormalizedBoneNode('neck');
+          const spine = vrm.humanoid.getNormalizedBoneNode('spine');
+          const chest = vrm.humanoid.getNormalizedBoneNode('chest');
+          const upperChest = vrm.humanoid.getNormalizedBoneNode('upperChest');
+          const hips = vrm.humanoid.getNormalizedBoneNode('hips');
+          const leftShoulder = vrm.humanoid.getNormalizedBoneNode('leftShoulder');
+          const rightShoulder = vrm.humanoid.getNormalizedBoneNode('rightShoulder');
+          const leftUpperArm = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
+          const rightUpperArm = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+          const leftLowerArm = vrm.humanoid.getNormalizedBoneNode('leftLowerArm');
+          const rightLowerArm = vrm.humanoid.getNormalizedBoneNode('rightLowerArm');
+          const leftHand = vrm.humanoid.getNormalizedBoneNode('leftHand');
+          const rightHand = vrm.humanoid.getNormalizedBoneNode('rightHand');
+          const leftUpperLeg = vrm.humanoid.getNormalizedBoneNode('leftUpperLeg');
+          const rightUpperLeg = vrm.humanoid.getNormalizedBoneNode('rightUpperLeg');
+          
+          if (isTalking) {
+            // Energetic, friendly head movement
+            if (head) {
+              head.rotation.y = Math.sin(time * 2.5) * 0.2 + Math.sin(time * 1.2) * 0.1;
+              head.rotation.x = Math.sin(time * 1.8) * 0.1 + Math.cos(time * 0.9) * 0.05;
+              head.rotation.z = Math.sin(time * 1.5) * 0.08;
+            }
+            if (neck) {
+              neck.rotation.y = Math.sin(time * 2.2) * 0.08;
+              neck.rotation.x = Math.sin(time * 1.5) * 0.06;
+            }
+            
+            // Cheerful body movement
+            if (hips) {
+              hips.rotation.y = Math.sin(time * 1.0) * 0.06;
+              hips.rotation.z = Math.sin(time * 0.8) * 0.03;
+            }
+            if (spine) {
+              spine.rotation.y = Math.sin(time * 1.2) * 0.06;
+              spine.rotation.z = Math.sin(time * 0.8) * 0.04;
+            }
+            if (chest) {
+              chest.rotation.y = Math.sin(time * 1.5) * 0.08;
+              chest.rotation.x = Math.sin(time * 1.0) * 0.03;
+            }
+            if (upperChest) {
+              upperChest.rotation.y = Math.sin(time * 1.8) * 0.05;
+            }
+            
+            // Shoulder movement
+            if (leftShoulder) {
+              leftShoulder.rotation.z = Math.sin(time * 2.0) * 0.06;
+            }
+            if (rightShoulder) {
+              rightShoulder.rotation.z = -Math.sin(time * 2.0 + 0.5) * 0.06;
+            }
+            
+            // Expressive arm gestures
+            if (leftUpperArm) {
+              leftUpperArm.rotation.z = 1.2 + Math.sin(time * 1.5) * 0.15;
+              leftUpperArm.rotation.x = Math.sin(time * 1.2) * 0.1;
+            }
+            if (rightUpperArm) {
+              rightUpperArm.rotation.z = -1.2 - Math.sin(time * 1.8) * 0.15;
+              rightUpperArm.rotation.x = Math.sin(time * 1.2 + 0.5) * 0.1;
+            }
+            if (leftLowerArm) {
+              leftLowerArm.rotation.y = Math.sin(time * 2.5) * 0.15;
+            }
+            if (rightLowerArm) {
+              rightLowerArm.rotation.y = -Math.sin(time * 2.5 + 0.5) * 0.15;
+            }
+            if (leftHand) {
+              leftHand.rotation.z = Math.sin(time * 3) * 0.1;
+            }
+            if (rightHand) {
+              rightHand.rotation.z = -Math.sin(time * 3 + 0.3) * 0.1;
+            }
+            
+          } else {
+            // IDLE - Soft, sweet, cheerful movement
+            const breathRate = 1.1;
+            
+            // Soft curious head tilts
+            if (head) {
+              head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, Math.sin(time * 0.35) * 0.1, delta * 2);
+              head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, Math.sin(time * 0.28) * 0.06, delta * 2);
+              head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, Math.sin(time * 0.32) * 0.07, delta * 2);
+            }
+            if (neck) {
+              neck.rotation.y = THREE.MathUtils.lerp(neck.rotation.y, Math.sin(time * 0.33) * 0.06, delta * 2);
+              neck.rotation.x = THREE.MathUtils.lerp(neck.rotation.x, Math.sin(time * breathRate * 0.5) * 0.03, delta * 2);
+              neck.rotation.z = THREE.MathUtils.lerp(neck.rotation.z, Math.sin(time * 0.3) * 0.02, delta * 2);
+            }
+            
+            // Gentle breathing
+            if (chest) {
+              chest.rotation.x = THREE.MathUtils.lerp(chest.rotation.x, Math.sin(time * breathRate) * 0.04, delta * 3);
+              chest.rotation.y = THREE.MathUtils.lerp(chest.rotation.y, Math.sin(time * 0.38) * 0.03, delta * 2);
+              chest.rotation.z = THREE.MathUtils.lerp(chest.rotation.z, Math.sin(time * 0.42) * 0.02, delta * 2);
+            }
+            if (upperChest) {
+              upperChest.rotation.x = THREE.MathUtils.lerp(upperChest.rotation.x, Math.sin(time * breathRate + 0.5) * 0.04, delta * 3);
+              upperChest.rotation.y = THREE.MathUtils.lerp(upperChest.rotation.y, Math.sin(time * 0.4) * 0.02, delta * 2);
+            }
+            
+            // Soft spine movement
+            if (spine) {
+              spine.rotation.y = THREE.MathUtils.lerp(spine.rotation.y, Math.sin(time * 0.32) * 0.04, delta * 2);
+              spine.rotation.x = THREE.MathUtils.lerp(spine.rotation.x, Math.sin(time * breathRate * 0.6) * 0.02, delta * 2);
+              spine.rotation.z = THREE.MathUtils.lerp(spine.rotation.z, Math.sin(time * 0.35) * 0.02, delta * 2);
+            }
+            
+            // Gentle hip sway
+            if (hips) {
+              hips.rotation.y = THREE.MathUtils.lerp(hips.rotation.y, Math.sin(time * 0.28) * 0.03, delta * 2);
+              hips.rotation.z = THREE.MathUtils.lerp(hips.rotation.z, Math.sin(time * 0.32) * 0.02, delta * 2);
+            }
+            
+            // Shoulders with soft breathing
+            if (leftShoulder) {
+              leftShoulder.rotation.z = THREE.MathUtils.lerp(leftShoulder.rotation.z, Math.sin(time * breathRate) * 0.03, delta * 2);
+              leftShoulder.rotation.y = THREE.MathUtils.lerp(leftShoulder.rotation.y, Math.sin(time * 0.35) * 0.02, delta * 2);
+            }
+            if (rightShoulder) {
+              rightShoulder.rotation.z = THREE.MathUtils.lerp(rightShoulder.rotation.z, -Math.sin(time * breathRate) * 0.03, delta * 2);
+              rightShoulder.rotation.y = THREE.MathUtils.lerp(rightShoulder.rotation.y, -Math.sin(time * 0.35) * 0.02, delta * 2);
+            }
+            
+            // Arms with soft friendly movement
+            if (leftUpperArm) {
+              leftUpperArm.rotation.z = THREE.MathUtils.lerp(leftUpperArm.rotation.z, 1.2 + Math.sin(time * 0.38) * 0.05, delta * 2);
+              leftUpperArm.rotation.x = THREE.MathUtils.lerp(leftUpperArm.rotation.x, Math.sin(time * 0.35) * 0.03, delta * 2);
+              leftUpperArm.rotation.y = THREE.MathUtils.lerp(leftUpperArm.rotation.y, Math.sin(time * 0.3) * 0.02, delta * 2);
+            }
+            if (rightUpperArm) {
+              rightUpperArm.rotation.z = THREE.MathUtils.lerp(rightUpperArm.rotation.z, -1.2 - Math.sin(time * 0.38 + 0.5) * 0.05, delta * 2);
+              rightUpperArm.rotation.x = THREE.MathUtils.lerp(rightUpperArm.rotation.x, Math.sin(time * 0.35 + 0.5) * 0.03, delta * 2);
+              rightUpperArm.rotation.y = THREE.MathUtils.lerp(rightUpperArm.rotation.y, -Math.sin(time * 0.3) * 0.02, delta * 2);
+            }
+            if (leftLowerArm) {
+              leftLowerArm.rotation.y = THREE.MathUtils.lerp(leftLowerArm.rotation.y, Math.sin(time * 0.42) * 0.03, delta * 2);
+              leftLowerArm.rotation.z = THREE.MathUtils.lerp(leftLowerArm.rotation.z, Math.sin(time * 0.4) * 0.02, delta * 2);
+            }
+            if (rightLowerArm) {
+              rightLowerArm.rotation.y = THREE.MathUtils.lerp(rightLowerArm.rotation.y, -Math.sin(time * 0.42) * 0.03, delta * 2);
+              rightLowerArm.rotation.z = THREE.MathUtils.lerp(rightLowerArm.rotation.z, -Math.sin(time * 0.4) * 0.02, delta * 2);
+            }
+            
+            // Gentle hand movements
+            if (leftHand) {
+              leftHand.rotation.z = THREE.MathUtils.lerp(leftHand.rotation.z, Math.sin(time * 0.5) * 0.05, delta * 2);
+              leftHand.rotation.x = THREE.MathUtils.lerp(leftHand.rotation.x, Math.sin(time * 0.45) * 0.03, delta * 2);
+            }
+            if (rightHand) {
+              rightHand.rotation.z = THREE.MathUtils.lerp(rightHand.rotation.z, -Math.sin(time * 0.5) * 0.05, delta * 2);
+              rightHand.rotation.x = THREE.MathUtils.lerp(rightHand.rotation.x, Math.sin(time * 0.45 + 0.5) * 0.03, delta * 2);
+            }
+          }
+        }
+      }
+      
+      // Animate sparkles - gentle floating
+      sparkleLayers.forEach((layer, i) => {
+        layer.rotation.y += delta * 0.02 * (i + 1);
+        
+        // Twinkle effect
+        const positions = layer.geometry.attributes.position.array;
+        for (let j = 1; j < positions.length; j += 3) {
+          positions[j] += Math.sin(time * 2 + j * 0.1) * 0.001;
+        }
+        layer.geometry.attributes.position.needsUpdate = true;
+      });
+      
+      // Animate floating hearts
+      hearts.forEach((heart) => {
+        const { floatSpeed, floatOffset, rotateSpeed } = heart.userData;
+        heart.position.y += Math.sin(time * floatSpeed + floatOffset) * 0.002;
+        heart.rotation.y += delta * rotateSpeed;
+        heart.rotation.x = Math.sin(time * floatSpeed * 0.5 + floatOffset) * 0.1;
+      });
+      
+      // Animate clouds - slow drift
+      clouds.forEach((cloud) => {
+        cloud.position.x += delta * cloud.userData.driftSpeed;
+        if (cloud.position.x > 15) cloud.position.x = -15;
+        cloud.position.y += Math.sin(time * 0.3) * 0.001;
+      });
+      
+      // Animate cute rings - pulsing glow
+      ring.material.opacity = 0.4 + Math.sin(time * 2) * 0.15;
+      ring.rotation.z += delta * 0.2;
+      
+      outerRing.material.opacity = 0.2 + Math.sin(time * 1.5 + 1) * 0.1;
+      outerRing.rotation.z -= delta * 0.1;
+      
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+    
+    // Resize handler
+    window.addEventListener('resize', () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+    
+    // Chat functionality
+    function addMessage(text, sender) {
+      const div = document.createElement('div');
+      div.className = `message ${sender}`;
+      div.innerHTML = `<div class="message-label">${sender === 'user' ? 'You' : 'Luna'}</div><div class="message-text">${text}</div>`;
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    function setStatus(msg) {
+      statusEl.textContent = msg;
+    }
+    
+    async function sendMessage() {
+      const text = userInput.value.trim();
+      if (!text || sendBtn.disabled) return;
+      
+      addMessage(text, 'user');
+      userInput.value = '';
+      sendBtn.disabled = true;
+      setStatus('Luna is thinking...');
+      
+      try {
+        const res = await fetch(CHAT_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        
+        const rawResponse = res.headers.get('X-Luna-Response') || '...';
+        const responseText = decodeURIComponent(rawResponse);
+        addMessage(responseText, 'luna');
+
+        const blob = await res.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        player.src = audioUrl;
+        player.play();
+        
+      } catch (err) {
+        console.error('Chat error:', err);
+        setStatus('Error: ' + err.message);
+        addMessage("Oh no! I'm having trouble connecting. Make sure the server is running!", 'luna');
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+    
+    // Audio events
+    player.addEventListener('play', () => {
+      isTalking = true;
+      setStatus('Luna is speaking...');
+    });
+    player.addEventListener('ended', () => {
+      isTalking = false;
+      setStatus('Ready to help!');
+    });
+    player.addEventListener('pause', () => {
+      isTalking = false;
+      setStatus('Ready to help!');
+    });
+    
+    // Event listeners
+    sendBtn.addEventListener('click', sendMessage);
+    userInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+    
+    stopBtn.addEventListener('click', () => {
+      player.pause();
+      player.currentTime = 0;
+      isTalking = false;
+      setStatus('Stopped.');
+    });
+    
+    clearBtn.addEventListener('click', () => {
+      chatMessages.innerHTML = `
+        <div class="message luna">
+          <div class="message-label">Luna</div>
+          <div class="message-text">Hi there! I'm Luna, your friendly assistant! How can I help you today? ✨</div>
+        </div>
+      `;
+      setStatus('Chat cleared!');
+    });
+    
+    // VOICE INPUT - Speech Recognition
+    const micBtn = document.getElementById('micBtn');
+    let recognition = null;
+    let isRecording = false;
+    
+    // Check if browser supports speech recognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      
+      recognition.onstart = () => {
+        isRecording = true;
+        micBtn.classList.add('recording');
+        setStatus('Listening... speak now!');
+      };
+      
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        userInput.value = transcript;
+        
+        // If final result, send the message
+        if (event.results[event.results.length - 1].isFinal) {
+          setTimeout(() => {
+            if (userInput.value.trim()) {
+              sendMessage();
+            }
+          }, 500);
+        }
+      };
+      
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        isRecording = false;
+        micBtn.classList.remove('recording');
+        if (event.error === 'not-allowed') {
+          setStatus('Microphone access denied');
+        } else {
+          setStatus('Voice error: ' + event.error);
+        }
+      };
+      
+      recognition.onend = () => {
+        isRecording = false;
+        micBtn.classList.remove('recording');
+        if (!userInput.value.trim()) {
+          setStatus('Ready to help!');
+        }
+      };
+      
+      // Click to toggle recording
+      micBtn.addEventListener('click', () => {
+        if (isRecording) {
+          recognition.stop();
+        } else {
+          recognition.start();
+        }
+      });
+      
+    } else {
+      // Browser doesn't support speech recognition
+      micBtn.style.opacity = '0.5';
+      micBtn.style.cursor = 'not-allowed';
+      micBtn.title = 'Voice input not supported in this browser';
+      micBtn.addEventListener('click', () => {
+        setStatus('Voice not supported. Try Chrome!');
+      });
+    }
+    
+    // TOUCH LUNA TO MAKE HER TALK
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let canTouch = true;
+    
+    // Touch phrases - friendly, cheerful responses
+    const touchPhrases = [
+      "Hehe, hi there! Did you need something?",
+      "Oh! Hi! I'm here to help!",
+      "Yay! Someone wants to talk to me!",
+      "Hello hello! What can I do for you?",
+      "Aww, that's nice! How are you today?",
+      "Oh my, that tickles! Hehe!",
+      "Hi friend! Need any help?",
+      "Ooh! You surprised me! But in a good way!",
+      "Hehe, hey there! What's up?",
+      "Oh! Hello! I didn't see you there!",
+      "Aww, that's sweet! How can I help?",
+      "Yay! Interaction! I love helping people!",
+      "Hi hi! Ready to assist whenever you need!",
+      "Oh! Someone's friendly today! I like it!",
+      "Hehe, hello! Ask me anything!",
+      "Aww, you're so nice! What do you need?",
+      "Ooh, hi! I was hoping you'd say hello!",
+      "Yay! A friend! How can I help you today?",
+      "Oh my! Hello there, friend!",
+      "Hehe, that was unexpected! But fun!",
+      "Hi! I'm always happy to chat!",
+      "Aww, you're making me smile!",
+      "Oh! Hello! I love meeting new people!",
+      "Yay! Someone to help! What do you need?",
+      "Hehe, hi! I'm Luna, nice to meet you!",
+      "Ooh, a visitor! How exciting!",
+      "Hello! I hope you're having a great day!",
+      "Aww, that's so sweet! Ask me anything!",
+      "Hi friend! I'm here for you!",
+      "Oh! Someone's curious! I like that!",
+    ];
+    
+    async function lunaReactToTouch() {
+      if (!canTouch || isTalking) return;
+      
+      canTouch = false;
+      setStatus('Luna reacts...');
+      
+      const phrase = touchPhrases[Math.floor(Math.random() * touchPhrases.length)];
+      
+      try {
+        const res = await fetch(CHAT_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: `[The user just greeted you or got your attention. Respond cheerfully and friendly in 1-2 short sentences. Be helpful and warm.]` })
+        });
+        
+        if (!res.ok) throw new Error('Server error');
+        
+        const rawResponse = res.headers.get('X-Luna-Response') || phrase;
+        const responseText = decodeURIComponent(rawResponse);
+        addMessage(responseText, 'luna');
+
+        const blob = await res.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        player.src = audioUrl;
+        player.play();
+        
+      } catch (err) {
+        addMessage(phrase, 'luna');
+        console.log('Touch response (no audio):', phrase);
+        setStatus('Ready to help!');
+      }
+      
+      setTimeout(() => {
+        canTouch = true;
+      }, 3000);
+    }
+    
+    function onCanvasClick(event) {
+      if (!vrm) return;
+      
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObject(vrm.scene, true);
+      
+      if (intersects.length > 0) {
+        lunaReactToTouch();
+      }
+    }
+    
+    renderer.domElement.addEventListener('click', onCanvasClick);
+    
+    renderer.domElement.addEventListener('touchend', (event) => {
+      if (event.changedTouches.length > 0) {
+        const touch = event.changedTouches[0];
+        onCanvasClick({ clientX: touch.clientX, clientY: touch.clientY });
+      }
+    });
+    
+    renderer.domElement.addEventListener('mousemove', (event) => {
+      if (!vrm) return;
+      
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObject(vrm.scene, true);
+      
+      renderer.domElement.style.cursor = intersects.length > 0 ? 'pointer' : 'grab';
+    });
+  </script>
+</body>
+</html>
+

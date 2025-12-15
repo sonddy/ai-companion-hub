@@ -1,0 +1,14 @@
+{
+  "name": "ai-companion-hub",
+  "version": "1.0.0",
+  "description": "AI Companion Hub with 3D VRM avatars",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo 'No build needed - static site'"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  }
+}
+
