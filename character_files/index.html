@@ -161,6 +161,48 @@
       background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
     }
 
+    /* Social Links */
+    .social-links {
+      position: fixed;
+      top: 30px;
+      left: 30px;
+      z-index: 100;
+      display: flex;
+      gap: 12px;
+    }
+
+    .social-btn {
+      width: 45px;
+      height: 45px;
+      border-radius: 12px;
+      background: rgba(10, 8, 18, 0.8);
+      border: 1px solid rgba(255, 107, 157, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .social-btn:hover {
+      background: rgba(255, 107, 157, 0.2);
+      border-color: var(--accent-pink);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(255, 107, 157, 0.3);
+    }
+
+    .social-btn svg {
+      width: 22px;
+      height: 22px;
+      fill: var(--text);
+      transition: fill 0.3s ease;
+    }
+
+    .social-btn:hover svg {
+      fill: var(--accent-pink);
+    }
+
     /* Corner accents */
     .corner {
       position: fixed;
@@ -521,6 +563,22 @@
 
     /* Responsive - Mobile */
     @media (max-width: 480px) {
+      .social-links {
+        top: 15px;
+        left: 15px;
+      }
+      
+      .social-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+      }
+      
+      .social-btn svg {
+        width: 18px;
+        height: 18px;
+      }
+      
       .container {
         padding: 15px 10px;
       }
@@ -672,6 +730,15 @@
   </style>
 </head>
 <body>
+  <!-- Social Links -->
+  <div class="social-links">
+    <a href="https://x.com/AIC05" target="_blank" class="social-btn" title="Follow us on X">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+      </svg>
+    </a>
+  </div>
+
   <!-- Starfield background -->
   <div class="starfield" id="starfield"></div>
   
