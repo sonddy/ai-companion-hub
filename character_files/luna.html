@@ -591,9 +591,12 @@
     
     @media (max-width: 480px) {
       .radio-widget {
-        bottom: 8px;
+        bottom: auto;
+        top: 60px;
         left: 8px;
-        right: 8px;
+        right: auto;
+        min-width: 180px;
+        max-width: calc(100vw - 100px);
         padding: 10px 12px;
       }
       .radio-name {
@@ -601,6 +604,28 @@
       }
       .radio-visualizer {
         height: 20px;
+      }
+      .radio-text {
+        font-size: 0.65rem;
+        max-height: 28px;
+      }
+      .radio-play-btn {
+        width: 38px;
+        height: 38px;
+      }
+      .radio-skip-btn {
+        width: 28px;
+        height: 28px;
+      }
+    }
+    @media (max-width: 768px) {
+      .radio-widget {
+        bottom: auto;
+        top: 60px;
+        left: 10px;
+        right: auto;
+        min-width: 200px;
+        max-width: calc(100vw - 100px);
       }
     }
   </style>
@@ -1454,8 +1479,8 @@
 
     // ==================== RADIO WIDGET ====================
     // Radio Widget for Luna - connects to the 3D model animation
-    // Uses Luna's dedicated radio server on port 8012
-    const LUNA_RADIO_API = 'http://127.0.0.1:8012';
+    // Uses Netlify function for radio streaming
+    const LUNA_RADIO_API = '/.netlify/functions/luna-radio';
     const LUNA_BG_MUSIC = 'music/Happy x Chance The Rapper Type Beat _Fun_ _ Upbeat Hip-hop Instrumental.mp3';
     
     let radioPlaying = false;
@@ -1590,7 +1615,7 @@
       fadeInBgMusic(); // Play background music while loading
 
       try {
-        const res = await fetch(`${LUNA_RADIO_API}/radio`, {
+        const res = await fetch(LUNA_RADIO_API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})

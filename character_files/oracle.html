@@ -455,6 +455,46 @@
       color: var(--muted);
       font-size: 12px;
     }
+      /* Mobile Radio Widget */
+    @media (max-width: 768px) {
+      .radio-widget {
+        bottom: auto;
+        top: 60px;
+        left: 10px;
+        right: auto;
+        min-width: 200px;
+        max-width: calc(100vw - 100px);
+      }
+    }
+    @media (max-width: 480px) {
+      .radio-widget {
+        bottom: auto;
+        top: 60px;
+        left: 8px;
+        right: auto;
+        min-width: 180px;
+        max-width: calc(100vw - 100px);
+        padding: 10px 12px;
+      }
+      .radio-name {
+        font-size: 0.75rem;
+      }
+      .radio-visualizer {
+        height: 20px;
+      }
+      .radio-text {
+        font-size: 0.65rem;
+        max-height: 28px;
+      }
+      .radio-play-btn {
+        width: 38px;
+        height: 38px;
+      }
+      .radio-skip-btn {
+        width: 28px;
+        height: 28px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1046,7 +1086,7 @@
     // ==================== RADIO WIDGET ====================
     // Radio Widget for Oracle - connects to the 3D model animation
     // Uses Oracle's dedicated radio server on port 8013
-    const ORACLE_RADIO_API = 'http://127.0.0.1:8013';
+    const ORACLE_RADIO_API = '/.netlify/functions/oracle-radio';
     
     // Debussy - Clair de Lune for mystical transitions
     const DEBUSSY_MUSIC = 'music/Debussy - Clair de Lune.mp3';
@@ -1192,7 +1232,7 @@
       fadeInDebussy();
 
       try {
-        const res = await fetch(`${ORACLE_RADIO_API}/radio`, {
+        const res = await fetch(`ORACLE_RADIO_API`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})
@@ -1300,3 +1340,4 @@
   </div>
 </body>
 </html>
+
