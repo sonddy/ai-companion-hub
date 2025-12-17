@@ -589,103 +589,117 @@
       }
     }
     
-    /* Mobile Mode Toggle */
-    .mobile-toggle {
+    /* Minimize buttons for mobile */
+    .minimize-btn {
       display: none;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: linear-gradient(135deg, rgba(255, 245, 248, 0.98), rgba(255, 240, 245, 0.98));
-      border-top: 2px solid rgba(255, 107, 157, 0.3);
-      padding: 12px 20px;
-      z-index: 300;
-      backdrop-filter: blur(20px);
-    }
-    .mobile-toggle-btns {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-    }
-    .mobile-toggle-btn {
-      flex: 1;
-      max-width: 150px;
-      padding: 12px 20px;
-      border: 2px solid rgba(255, 107, 157, 0.3);
-      border-radius: 25px;
-      background: transparent;
-      color: var(--muted);
-      font-size: 14px;
-      font-weight: 600;
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(255, 107, 157, 0.2);
+      border: 1px solid rgba(255, 107, 157, 0.4);
+      color: var(--accent);
+      font-size: 16px;
       cursor: pointer;
+      z-index: 10;
       transition: all 0.3s ease;
-      display: flex;
+    }
+    .minimize-btn:hover {
+      background: rgba(255, 107, 157, 0.4);
+      transform: scale(1.1);
+    }
+    
+    /* Minimized widget states */
+    .chat-interface.minimized,
+    .radio-widget.minimized {
+      width: 50px !important;
+      height: 50px !important;
+      min-width: 50px !important;
+      max-width: 50px !important;
+      padding: 0 !important;
+      border-radius: 50% !important;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .chat-interface.minimized > *:not(.minimize-btn),
+    .radio-widget.minimized > *:not(.minimize-btn) {
+      display: none !important;
+    }
+    .chat-interface.minimized .minimize-btn,
+    .radio-widget.minimized .minimize-btn {
+      position: static;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      font-size: 20px;
+      display: flex !important;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      font-family: inherit;
     }
-    .mobile-toggle-btn.active {
-      background: linear-gradient(135deg, rgba(255, 107, 157, 0.3), rgba(255, 143, 191, 0.2));
-      border-color: var(--accent);
-      color: var(--accent);
-      box-shadow: 0 0 20px rgba(255, 107, 157, 0.3);
+    .chat-interface.minimized {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important;
     }
-    .mobile-toggle-btn:not(.active):hover {
-      border-color: rgba(255, 107, 157, 0.5);
-      color: var(--text);
+    .radio-widget.minimized {
+      background: linear-gradient(135deg, var(--accent), #ff8fbf) !important;
     }
     
     @media (max-width: 768px) {
-      .mobile-toggle {
-        display: block;
+      .minimize-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       .chat-interface {
-        display: none;
+        position: fixed;
         right: 10px;
-        left: 10px;
-        width: auto;
-        top: 60px;
-        bottom: 80px;
+        bottom: 10px;
+        left: auto;
+        top: auto;
+        width: 300px;
+        max-width: calc(100vw - 20px);
+        max-height: 45vh;
         transform: none;
-        max-height: none;
-        height: auto;
-      }
-      .chat-interface.mobile-active {
-        display: flex;
+        transition: all 0.3s ease;
       }
       .radio-widget {
-        display: none;
-        top: 60px;
+        position: fixed;
         left: 10px;
-        right: 10px;
+        top: 60px;
         bottom: auto;
-        min-width: auto;
-        max-width: none;
-      }
-      .radio-widget.mobile-active {
-        display: block;
+        right: auto;
+        width: 220px;
+        min-width: 220px;
+        max-width: calc(100vw - 80px);
+        transition: all 0.3s ease;
       }
       .title-overlay {
         top: 15px;
         left: 15px;
       }
       .title-overlay h1 {
-        font-size: 28px;
+        font-size: 24px;
       }
       .title-overlay p {
-        font-size: 12px;
+        font-size: 11px;
       }
       .back-btn {
         top: 10px;
         right: 10px;
-        padding: 8px 15px;
-        font-size: 12px;
+        padding: 6px 12px;
+        font-size: 11px;
       }
     }
     
     @media (max-width: 480px) {
-      .radio-widget.mobile-active {
+      .chat-interface {
+        width: 280px;
+        max-height: 40vh;
+      }
+      .radio-widget {
+        width: 180px;
+        min-width: 180px;
         padding: 10px 12px;
       }
       .radio-name {
@@ -706,9 +720,6 @@
         width: 28px;
         height: 28px;
       }
-      .chat-messages {
-        max-height: calc(100vh - 300px);
-      }
     }
   </style>
 </head>
@@ -726,7 +737,8 @@
       </div>
     </div>
 
-    <div class="chat-interface">
+    <div class="chat-interface" id="chatInterface">
+      <button class="minimize-btn" id="chatMinBtn" onclick="toggleChatMinimize()">💬</button>
       <div class="chat-header">
         <h2>Chat with Luna</h2>
         <span class="status" id="status">Ready to help!</span>
@@ -1773,7 +1785,7 @@
 
   <!-- Radio Widget -->
   <div class="radio-widget" id="radioWidget">
-    <button class="radio-toggle" onclick="toggleRadioWidget()">−</button>
+    <button class="minimize-btn" id="radioMinBtn" onclick="toggleRadioMinimize()">📻</button>
     <div class="radio-header">
       <div class="radio-station">
         <span class="radio-icon">🌙</span>
@@ -1807,37 +1819,20 @@
     </div>
   </div>
 
-  <!-- Mobile Toggle -->
-  <div class="mobile-toggle">
-    <div class="mobile-toggle-btns">
-      <button class="mobile-toggle-btn active" id="chatToggle" onclick="switchToChat()">
-        💬 Chat
-      </button>
-      <button class="mobile-toggle-btn" id="radioToggle" onclick="switchToRadio()">
-        📻 Radio
-      </button>
-    </div>
-  </div>
-
   <script>
-    // Mobile toggle functionality
-    function switchToChat() {
-      document.getElementById('chatToggle').classList.add('active');
-      document.getElementById('radioToggle').classList.remove('active');
-      document.querySelector('.chat-interface').classList.add('mobile-active');
-      document.getElementById('radioWidget').classList.remove('mobile-active');
+    // Minimize/Expand functionality for mobile
+    function toggleChatMinimize() {
+      const chat = document.getElementById('chatInterface');
+      const btn = document.getElementById('chatMinBtn');
+      chat.classList.toggle('minimized');
+      btn.textContent = chat.classList.contains('minimized') ? '💬' : '−';
     }
     
-    function switchToRadio() {
-      document.getElementById('radioToggle').classList.add('active');
-      document.getElementById('chatToggle').classList.remove('active');
-      document.getElementById('radioWidget').classList.add('mobile-active');
-      document.querySelector('.chat-interface').classList.remove('mobile-active');
-    }
-    
-    // Initialize on mobile - show chat by default
-    if (window.innerWidth <= 768) {
-      document.querySelector('.chat-interface').classList.add('mobile-active');
+    function toggleRadioMinimize() {
+      const radio = document.getElementById('radioWidget');
+      const btn = document.getElementById('radioMinBtn');
+      radio.classList.toggle('minimized');
+      btn.textContent = radio.classList.contains('minimized') ? '📻' : '−';
     }
   </script>
 </body>
