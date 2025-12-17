@@ -35,7 +35,7 @@ CHARACTERS = {
     "luna": {
         "voice": "nova",
         "name": "Luna",
-        "station_name": "Feel-Good FM",
+        "station_name": "Luna Radio",
         "topics": [
             "a heartwarming motivational message to start the day",
             "a fun fact that will make listeners smile",
@@ -60,7 +60,7 @@ Never mention being an AI - you're Luna, the beloved radio host!"""
     "oracle": {
         "voice": "fable",
         "name": "Oracle",
-        "station_name": "Cosmic Radio",
+        "station_name": "Oracle Radio",
         "topics": [
             "today's cosmic energy and what it means for listeners",
             "a mystical meditation moment for inner peace",
@@ -87,7 +87,7 @@ Today's date is {date}. Never mention being an AI - you're Oracle, the cosmic ra
     "nicky": {
         "voice": "echo",
         "name": "Nicky",
-        "station_name": "Neon Wave Radio",
+        "station_name": "Nicky Radio",
         "topics": [
             "a flirty compliment for your amazing listeners tuning in",
             "playful banter about what makes a perfect gaming night",

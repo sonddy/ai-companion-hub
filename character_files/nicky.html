@@ -1429,8 +1429,8 @@
       <div class="radio-station">
         <span class="radio-icon">📻</span>
         <div class="radio-info">
-          <span class="radio-name">Neon Wave Radio</span>
-          <span class="radio-host">with Nicky~</span>
+          <span class="radio-name">Nicky Radio</span>
+          <span class="radio-host">~Your Neon Companion~</span>
         </div>
       </div>
       <div class="radio-live">
@@ -1459,7 +1459,7 @@
   </div>
 
   <script>
-    // Radio Widget for Nicky
+    // Radio Widget for Nicky - connects to the 3D model animation
     const RADIO_API = 'http://127.0.0.1:8010';
     const CHARACTER = 'nicky';
     
@@ -1503,11 +1503,22 @@
       radioAudio.volume = e.target.value / 100;
     });
 
+    // Connect radio audio to Nicky's animation
+    radioAudio.addEventListener('play', () => {
+      isTalking = true; // Animate Nicky's mouth and body
+    });
+
     radioAudio.addEventListener('ended', () => {
+      isTalking = false;
       if (radioPlaying) loadRadioSegment();
     });
 
+    radioAudio.addEventListener('pause', () => {
+      isTalking = false;
+    });
+
     radioAudio.addEventListener('error', () => {
+      isTalking = false;
       radioText.textContent = 'Connection error... retrying~';
       setTimeout(() => { if (radioPlaying) loadRadioSegment(); }, 2000);
     });
@@ -1522,6 +1533,7 @@
       radioPlaying = false;
       radioPlayBtn.classList.remove('playing');
       radioAudio.pause();
+      isTalking = false;
       stopRadioVisualizer();
     }
 
@@ -1551,6 +1563,7 @@
         radioText.textContent = 'Oops! Make sure the radio server is running~';
         radioPlaying = false;
         radioPlayBtn.classList.remove('playing');
+        isTalking = false;
       } finally {
         radioLoading = false;
       }

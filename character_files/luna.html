@@ -1368,8 +1368,8 @@
       <div class="radio-station">
         <span class="radio-icon">🌙</span>
         <div class="radio-info">
-          <span class="radio-name">Feel-Good FM</span>
-          <span class="radio-host">with Luna ✨</span>
+          <span class="radio-name">Luna Radio</span>
+          <span class="radio-host">~Your Cheerful Companion~</span>
         </div>
       </div>
       <div class="radio-live">
@@ -1398,7 +1398,7 @@
   </div>
 
   <script>
-    // Radio Widget for Luna
+    // Radio Widget for Luna - connects to the 3D model animation
     const RADIO_API = 'http://127.0.0.1:8010';
     const CHARACTER = 'luna';
     
@@ -1442,11 +1442,22 @@
       radioAudio.volume = e.target.value / 100;
     });
 
+    // Connect radio audio to Luna's animation
+    radioAudio.addEventListener('play', () => {
+      isTalking = true; // Animate Luna's mouth and body
+    });
+
     radioAudio.addEventListener('ended', () => {
+      isTalking = false;
       if (radioPlaying) loadRadioSegment();
     });
 
+    radioAudio.addEventListener('pause', () => {
+      isTalking = false;
+    });
+
     radioAudio.addEventListener('error', () => {
+      isTalking = false;
       radioText.textContent = 'Oops! Connection issue... trying again!';
       setTimeout(() => { if (radioPlaying) loadRadioSegment(); }, 2000);
     });
@@ -1461,6 +1472,7 @@
       radioPlaying = false;
       radioPlayBtn.classList.remove('playing');
       radioAudio.pause();
+      isTalking = false;
       stopRadioVisualizer();
     }
 
@@ -1490,6 +1502,7 @@
         radioText.textContent = 'Oh no! Make sure the radio server is running!';
         radioPlaying = false;
         radioPlayBtn.classList.remove('playing');
+        isTalking = false;
       } finally {
         radioLoading = false;
       }

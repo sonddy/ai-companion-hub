@@ -1051,8 +1051,8 @@
       <div class="radio-station">
         <span class="radio-icon">🔮</span>
         <div class="radio-info">
-          <span class="radio-name">Cosmic Radio</span>
-          <span class="radio-host">with Oracle ✨</span>
+          <span class="radio-name">Oracle Radio</span>
+          <span class="radio-host">~Your Cosmic Guide~</span>
         </div>
       </div>
       <div class="radio-live">
@@ -1081,7 +1081,7 @@
   </div>
 
   <script>
-    // Radio Widget for Oracle
+    // Radio Widget for Oracle - connects to the 3D model animation
     const RADIO_API = 'http://127.0.0.1:8010';
     const CHARACTER = 'oracle';
     
@@ -1125,11 +1125,22 @@
       radioAudio.volume = e.target.value / 100;
     });
 
+    // Connect radio audio to Oracle's animation
+    radioAudio.addEventListener('play', () => {
+      isTalking = true; // Animate Oracle's mouth and body
+    });
+
     radioAudio.addEventListener('ended', () => {
+      isTalking = false;
       if (radioPlaying) loadRadioSegment();
     });
 
+    radioAudio.addEventListener('pause', () => {
+      isTalking = false;
+    });
+
     radioAudio.addEventListener('error', () => {
+      isTalking = false;
       radioText.textContent = 'The cosmic connection wavers... seeking clarity...';
       setTimeout(() => { if (radioPlaying) loadRadioSegment(); }, 2000);
     });
@@ -1144,6 +1155,7 @@
       radioPlaying = false;
       radioPlayBtn.classList.remove('playing');
       radioAudio.pause();
+      isTalking = false;
       stopRadioVisualizer();
     }
 
@@ -1173,6 +1185,7 @@
         radioText.textContent = 'The stars are silent... ensure the radio server is running.';
         radioPlaying = false;
         radioPlayBtn.classList.remove('playing');
+        isTalking = false;
       } finally {
         radioLoading = false;
       }
