@@ -251,6 +251,210 @@
       .title-overlay h1 { font-size: 32px; }
       .back-btn { right: auto; left: 20px; top: 80px; }
     }
+
+    /* Radio Widget */
+    .radio-widget {
+      position: fixed;
+      bottom: 30px;
+      left: 30px;
+      background: rgba(26, 16, 37, 0.95);
+      border: 1px solid rgba(153, 102, 255, 0.4);
+      border-radius: 20px;
+      padding: 15px 20px;
+      z-index: 150;
+      backdrop-filter: blur(15px);
+      min-width: 280px;
+      box-shadow: 0 10px 40px rgba(153, 102, 255, 0.3);
+    }
+    .radio-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .radio-station {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .radio-icon {
+      font-size: 1.5rem;
+    }
+    .radio-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .radio-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #b366ff;
+    }
+    .radio-host {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+    .radio-live {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.65rem;
+      color: #b366ff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .radio-live-dot {
+      width: 6px;
+      height: 6px;
+      background: #b366ff;
+      border-radius: 50%;
+      animation: blink-dot 1s ease-in-out infinite;
+    }
+    @keyframes blink-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .radio-visualizer {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 3px;
+      height: 30px;
+      margin-bottom: 12px;
+      padding: 5px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+    }
+    .radio-bar {
+      width: 4px;
+      background: linear-gradient(to top, #9966ff, #cc66ff);
+      border-radius: 2px;
+      min-height: 3px;
+      transition: height 0.1s ease;
+    }
+    .radio-text {
+      font-size: 0.75rem;
+      color: var(--text);
+      opacity: 0.9;
+      margin-bottom: 12px;
+      max-height: 40px;
+      overflow: hidden;
+      line-height: 1.4;
+      font-style: italic;
+    }
+    .radio-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+    }
+    .radio-play-btn {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #9966ff, #cc66ff);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 20px rgba(153, 102, 255, 0.4);
+    }
+    .radio-play-btn:hover {
+      transform: scale(1.1);
+    }
+    .radio-play-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: white;
+    }
+    .radio-play-btn.playing .play-icon { display: none; }
+    .radio-play-btn.playing .pause-icon { display: block; }
+    .radio-play-btn:not(.playing) .play-icon { display: block; }
+    .radio-play-btn:not(.playing) .pause-icon { display: none; }
+    .radio-skip-btn {
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      background: rgba(153, 102, 255, 0.1);
+      border: 1px solid rgba(153, 102, 255, 0.3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+    .radio-skip-btn:hover {
+      background: rgba(153, 102, 255, 0.2);
+      border-color: #b366ff;
+    }
+    .radio-skip-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: var(--text);
+    }
+    .radio-volume {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(153, 102, 255, 0.2);
+    }
+    .radio-volume svg {
+      width: 16px;
+      height: 16px;
+      fill: var(--muted);
+    }
+    .radio-volume-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 4px;
+      background: rgba(153, 102, 255, 0.2);
+      border-radius: 2px;
+      outline: none;
+    }
+    .radio-volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #b366ff;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .radio-loading {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(153, 102, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #b366ff;
+      animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .radio-widget.collapsed {
+      min-width: auto;
+      padding: 10px 15px;
+    }
+    .radio-widget.collapsed .radio-visualizer,
+    .radio-widget.collapsed .radio-text,
+    .radio-widget.collapsed .radio-volume {
+      display: none;
+    }
+    .radio-toggle {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 20px;
+      height: 20px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
@@ -838,6 +1042,182 @@
       const intersects = raycaster.intersectObject(vrm.scene, true);
       renderer.domElement.style.cursor = intersects.length > 0 ? 'pointer' : 'grab';
     });
+  </script>
+
+  <!-- Radio Widget -->
+  <div class="radio-widget" id="radioWidget">
+    <button class="radio-toggle" onclick="toggleRadioWidget()">−</button>
+    <div class="radio-header">
+      <div class="radio-station">
+        <span class="radio-icon">🔮</span>
+        <div class="radio-info">
+          <span class="radio-name">Cosmic Radio</span>
+          <span class="radio-host">with Oracle ✨</span>
+        </div>
+      </div>
+      <div class="radio-live">
+        <div class="radio-live-dot"></div>
+        <span>LIVE</span>
+      </div>
+    </div>
+    <div class="radio-visualizer" id="radioVisualizer"></div>
+    <div class="radio-text" id="radioText">The stars await... Press play to receive cosmic wisdom 🌟</div>
+    <div class="radio-controls">
+      <button class="radio-skip-btn" id="radioSkipBtn" title="Skip">
+        <svg viewBox="0 0 24 24"><path d="M5 4l10 8-10 8V4zm11 0h3v16h-3V4z"/></svg>
+      </button>
+      <button class="radio-play-btn" id="radioPlayBtn">
+        <svg class="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <svg class="pause-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+      </button>
+      <button class="radio-skip-btn" id="radioNextBtn" title="Next">
+        <svg viewBox="0 0 24 24"><path d="M5 4l10 8-10 8V4zm11 0h3v16h-3V4z"/></svg>
+      </button>
+    </div>
+    <div class="radio-volume">
+      <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+      <input type="range" class="radio-volume-slider" id="radioVolume" min="0" max="100" value="70">
+    </div>
+  </div>
+
+  <script>
+    // Radio Widget for Oracle
+    const RADIO_API = 'http://127.0.0.1:8010';
+    const CHARACTER = 'oracle';
+    
+    let radioPlaying = false;
+    let radioLoading = false;
+    let radioAudio = new Audio();
+    let radioContext = null;
+    let radioAnalyser = null;
+    let radioAnimId = null;
+
+    const radioPlayBtn = document.getElementById('radioPlayBtn');
+    const radioSkipBtn = document.getElementById('radioSkipBtn');
+    const radioNextBtn = document.getElementById('radioNextBtn');
+    const radioVolume = document.getElementById('radioVolume');
+    const radioText = document.getElementById('radioText');
+    const radioVisualizer = document.getElementById('radioVisualizer');
+    const radioWidget = document.getElementById('radioWidget');
+
+    // Init visualizer bars
+    for (let i = 0; i < 25; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'radio-bar';
+      bar.style.height = '3px';
+      radioVisualizer.appendChild(bar);
+    }
+
+    radioAudio.volume = radioVolume.value / 100;
+
+    radioPlayBtn.addEventListener('click', () => {
+      if (radioLoading) return;
+      if (radioPlaying) {
+        pauseRadio();
+      } else {
+        playRadio();
+      }
+    });
+
+    radioSkipBtn.addEventListener('click', loadRadioSegment);
+    radioNextBtn.addEventListener('click', loadRadioSegment);
+    radioVolume.addEventListener('input', (e) => {
+      radioAudio.volume = e.target.value / 100;
+    });
+
+    radioAudio.addEventListener('ended', () => {
+      if (radioPlaying) loadRadioSegment();
+    });
+
+    radioAudio.addEventListener('error', () => {
+      radioText.textContent = 'The cosmic connection wavers... seeking clarity...';
+      setTimeout(() => { if (radioPlaying) loadRadioSegment(); }, 2000);
+    });
+
+    async function playRadio() {
+      radioPlaying = true;
+      radioPlayBtn.classList.add('playing');
+      await loadRadioSegment();
+    }
+
+    function pauseRadio() {
+      radioPlaying = false;
+      radioPlayBtn.classList.remove('playing');
+      radioAudio.pause();
+      stopRadioVisualizer();
+    }
+
+    async function loadRadioSegment() {
+      if (radioLoading) return;
+      radioLoading = true;
+      radioText.innerHTML = '<span class="radio-loading"></span> Consulting the cosmos...';
+
+      try {
+        const res = await fetch(`${RADIO_API}/stream/${CHARACTER}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+
+        if (!res.ok) throw new Error('Failed to load');
+
+        const text = res.headers.get('X-Radio-Text');
+        if (text) radioText.textContent = decodeURIComponent(text);
+
+        const blob = await res.blob();
+        radioAudio.src = URL.createObjectURL(blob);
+        await radioAudio.play();
+        startRadioVisualizer();
+      } catch (err) {
+        console.error('Radio error:', err);
+        radioText.textContent = 'The stars are silent... ensure the radio server is running.';
+        radioPlaying = false;
+        radioPlayBtn.classList.remove('playing');
+      } finally {
+        radioLoading = false;
+      }
+    }
+
+    function startRadioVisualizer() {
+      if (!radioContext) {
+        radioContext = new (window.AudioContext || window.webkitAudioContext)();
+        radioAnalyser = radioContext.createAnalyser();
+        const source = radioContext.createMediaElementSource(radioAudio);
+        source.connect(radioAnalyser);
+        radioAnalyser.connect(radioContext.destination);
+        radioAnalyser.fftSize = 64;
+      }
+
+      const bufferLength = radioAnalyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      const bars = radioVisualizer.querySelectorAll('.radio-bar');
+
+      function animate() {
+        radioAnimId = requestAnimationFrame(animate);
+        radioAnalyser.getByteFrequencyData(dataArray);
+        bars.forEach((bar, i) => {
+          const value = dataArray[i] || 0;
+          bar.style.height = `${Math.max(3, (value / 255) * 25)}px`;
+        });
+      }
+
+      if (radioContext.state === 'suspended') radioContext.resume();
+      animate();
+    }
+
+    function stopRadioVisualizer() {
+      if (radioAnimId) {
+        cancelAnimationFrame(radioAnimId);
+        radioAnimId = null;
+      }
+      radioVisualizer.querySelectorAll('.radio-bar').forEach(bar => {
+        bar.style.height = '3px';
+      });
+    }
+
+    function toggleRadioWidget() {
+      radioWidget.classList.toggle('collapsed');
+    }
   </script>
 </body>
 </html>
