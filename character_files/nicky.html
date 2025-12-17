@@ -1427,7 +1427,8 @@
     const NICKY_RADIO_API = 'http://127.0.0.1:8011';
     
     // Background music for transitions - Lofi/chill synthwave vibe for Nicky
-    const NICKY_BG_MUSIC = 'https://cdn.pixabay.com/audio/2024/11/01/audio_a29f5528e3.mp3'; // Lofi chill
+    // Using Mixkit free music CDN (reliable source)
+    const NICKY_BG_MUSIC = 'https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3'; // Chill electronic
     
     let radioPlaying = false;
     let radioLoading = false;
@@ -1496,32 +1497,30 @@
 
     // Fade in/out background music
     function fadeInBgMusic() {
-      bgMusic.volume = 0;
-      bgMusic.play().catch(() => {}); // Ignore autoplay errors
-      let vol = 0;
-      const fadeIn = setInterval(() => {
-        vol += 0.02;
-        if (vol >= 0.3) {
-          bgMusic.volume = 0.3;
-          clearInterval(fadeIn);
-        } else {
-          bgMusic.volume = vol;
-        }
-      }, 50);
+      console.log('🎵 Starting background music...');
+      bgMusic.currentTime = 0;
+      bgMusic.volume = 0.3; // Start at full volume immediately
+      bgMusic.play().then(() => {
+        console.log('🎵 Background music playing!');
+      }).catch((e) => {
+        console.log('🎵 Music autoplay blocked, will play on next user interaction');
+      });
     }
 
     function fadeOutBgMusic() {
+      console.log('🎵 Fading out background music...');
       let vol = bgMusic.volume;
       const fadeOut = setInterval(() => {
-        vol -= 0.02;
+        vol -= 0.05;
         if (vol <= 0) {
           bgMusic.volume = 0;
           bgMusic.pause();
           clearInterval(fadeOut);
+          console.log('🎵 Background music stopped');
         } else {
           bgMusic.volume = vol;
         }
-      }, 50);
+      }, 30);
     }
 
     async function playRadio() {

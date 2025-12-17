@@ -1049,7 +1049,8 @@
     const ORACLE_RADIO_API = 'http://127.0.0.1:8013';
     
     // Background music for transitions - Mystical/ambient vibe for Oracle
-    const ORACLE_BG_MUSIC = 'https://cdn.pixabay.com/audio/2024/10/25/audio_195e3486b5.mp3'; // Ambient mystical
+    // Using Mixkit free music CDN (reliable source)
+    const ORACLE_BG_MUSIC = 'https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3'; // Ambient mystical
     
     let radioPlaying = false;
     let radioLoading = false;
@@ -1118,32 +1119,30 @@
 
     // Fade in/out background music
     function fadeInBgMusic() {
-      bgMusic.volume = 0;
-      bgMusic.play().catch(() => {}); // Ignore autoplay errors
-      let vol = 0;
-      const fadeIn = setInterval(() => {
-        vol += 0.02;
-        if (vol >= 0.3) {
-          bgMusic.volume = 0.3;
-          clearInterval(fadeIn);
-        } else {
-          bgMusic.volume = vol;
-        }
-      }, 50);
+      console.log('🎵 Starting background music...');
+      bgMusic.currentTime = 0;
+      bgMusic.volume = 0.3; // Start at full volume immediately
+      bgMusic.play().then(() => {
+        console.log('🎵 Background music playing!');
+      }).catch((e) => {
+        console.log('🎵 Music autoplay blocked, will play on next user interaction');
+      });
     }
 
     function fadeOutBgMusic() {
+      console.log('🎵 Fading out background music...');
       let vol = bgMusic.volume;
       const fadeOut = setInterval(() => {
-        vol -= 0.02;
+        vol -= 0.05;
         if (vol <= 0) {
           bgMusic.volume = 0;
           bgMusic.pause();
           clearInterval(fadeOut);
+          console.log('🎵 Background music stopped');
         } else {
           bgMusic.volume = vol;
         }
-      }, 50);
+      }, 30);
     }
 
     async function playRadio() {
