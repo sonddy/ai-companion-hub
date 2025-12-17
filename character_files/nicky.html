@@ -1426,6 +1426,16 @@
     // Uses Nicky's dedicated radio server on port 8011
     const NICKY_RADIO_API = 'http://127.0.0.1:8011';
     
+    // Love Beat background music for Nicky's radio transitions
+    const NICKY_BG_MUSIC = '../music/[ FREE ] Love Beat Instrumental Type Beat Latest 2023.mp3';
+    let bgMusic = new Audio(NICKY_BG_MUSIC);
+    bgMusic.volume = 0.35; // Soft background volume
+    
+    // Track fade intervals to prevent duplicates
+    let fadeInInterval = null;
+    let fadeOutInterval = null;
+    let bgMusicTargetVolume = 0.35;
+    
     let radioPlaying = false;
     let radioLoading = false;
     let radioAudio = new Audio();
@@ -1464,11 +1474,57 @@
     radioNextBtn.addEventListener('click', loadRadioSegment);
     radioVolume.addEventListener('input', (e) => {
       radioAudio.volume = e.target.value / 100;
+      // Background music at 35% of main volume
+      bgMusicTargetVolume = (e.target.value / 100) * 0.35;
+      if (!bgMusic.paused) {
+        bgMusic.volume = bgMusicTargetVolume;
+      }
     });
+
+    // Background music fade controls
+    function fadeInBgMusic() {
+      if (fadeInInterval) clearInterval(fadeInInterval);
+      if (fadeOutInterval) clearInterval(fadeOutInterval);
+      
+      bgMusic.currentTime = 0; // Start from beginning
+      bgMusic.volume = 0;
+      bgMusic.play().catch(() => {});
+      
+      let vol = 0;
+      fadeInInterval = setInterval(() => {
+        vol += 0.05;
+        if (vol >= bgMusicTargetVolume) {
+          bgMusic.volume = bgMusicTargetVolume;
+          clearInterval(fadeInInterval);
+          fadeInInterval = null;
+        } else {
+          bgMusic.volume = vol;
+        }
+      }, 50);
+    }
+
+    function fadeOutBgMusic() {
+      if (fadeInInterval) clearInterval(fadeInInterval);
+      if (fadeOutInterval) clearInterval(fadeOutInterval);
+      
+      let vol = bgMusic.volume;
+      fadeOutInterval = setInterval(() => {
+        vol -= 0.05;
+        if (vol <= 0) {
+          bgMusic.volume = 0;
+          bgMusic.pause();
+          clearInterval(fadeOutInterval);
+          fadeOutInterval = null;
+        } else {
+          bgMusic.volume = vol;
+        }
+      }, 30);
+    }
 
     // Connect radio audio to Nicky's animation - NOW IN SAME SCOPE!
     radioAudio.addEventListener('play', () => {
       isTalking = true; // This now works - same scope as the animation
+      fadeOutBgMusic(); // Fade out background music when Nicky speaks
     });
 
     radioAudio.addEventListener('ended', () => {
@@ -1496,6 +1552,8 @@
       radioPlaying = false;
       radioPlayBtn.classList.remove('playing');
       radioAudio.pause();
+      bgMusic.pause();
+      bgMusic.volume = 0;
       isTalking = false;
       stopRadioVisualizer();
     }
@@ -1504,6 +1562,9 @@
       if (radioLoading) return;
       radioLoading = true;
       radioText.innerHTML = '<span class="radio-loading"></span> Nicky is preparing~';
+      
+      // Play background music while loading
+      fadeInBgMusic();
 
       try {
         const res = await fetch(`${NICKY_RADIO_API}/radio`, {
@@ -1527,6 +1588,7 @@
         radioPlaying = false;
         radioPlayBtn.classList.remove('playing');
         isTalking = false;
+        fadeOutBgMusic();
       } finally {
         radioLoading = false;
       }
