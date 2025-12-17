@@ -1460,8 +1460,8 @@
 
   <script>
     // Radio Widget for Nicky - connects to the 3D model animation
-    const RADIO_API = 'http://127.0.0.1:8010';
-    const CHARACTER = 'nicky';
+    // Uses Nicky's dedicated radio server on port 8011
+    const NICKY_RADIO_API = 'http://127.0.0.1:8011';
     
     let radioPlaying = false;
     let radioLoading = false;
@@ -1543,7 +1543,7 @@
       radioText.innerHTML = '<span class="radio-loading"></span> Nicky is preparing~';
 
       try {
-        const res = await fetch(`${RADIO_API}/stream/${CHARACTER}`, {
+        const res = await fetch(`${NICKY_RADIO_API}/radio`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})
