@@ -1042,45 +1042,8 @@
       const intersects = raycaster.intersectObject(vrm.scene, true);
       renderer.domElement.style.cursor = intersects.length > 0 ? 'pointer' : 'grab';
     });
-  </script>
 
-  <!-- Radio Widget -->
-  <div class="radio-widget" id="radioWidget">
-    <button class="radio-toggle" onclick="toggleRadioWidget()">−</button>
-    <div class="radio-header">
-      <div class="radio-station">
-        <span class="radio-icon">🔮</span>
-        <div class="radio-info">
-          <span class="radio-name">Oracle Radio</span>
-          <span class="radio-host">~Your Cosmic Guide~</span>
-        </div>
-      </div>
-      <div class="radio-live">
-        <div class="radio-live-dot"></div>
-        <span>LIVE</span>
-      </div>
-    </div>
-    <div class="radio-visualizer" id="radioVisualizer"></div>
-    <div class="radio-text" id="radioText">The stars await... Press play to receive cosmic wisdom 🌟</div>
-    <div class="radio-controls">
-      <button class="radio-skip-btn" id="radioSkipBtn" title="Skip">
-        <svg viewBox="0 0 24 24"><path d="M5 4l10 8-10 8V4zm11 0h3v16h-3V4z"/></svg>
-      </button>
-      <button class="radio-play-btn" id="radioPlayBtn">
-        <svg class="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-        <svg class="pause-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-      </button>
-      <button class="radio-skip-btn" id="radioNextBtn" title="Next">
-        <svg viewBox="0 0 24 24"><path d="M5 4l10 8-10 8V4zm11 0h3v16h-3V4z"/></svg>
-      </button>
-    </div>
-    <div class="radio-volume">
-      <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
-      <input type="range" class="radio-volume-slider" id="radioVolume" min="0" max="100" value="70">
-    </div>
-  </div>
-
-  <script>
+    // ==================== RADIO WIDGET ====================
     // Radio Widget for Oracle - connects to the 3D model animation
     // Uses Oracle's dedicated radio server on port 8013
     const ORACLE_RADIO_API = 'http://127.0.0.1:8013';
@@ -1125,9 +1088,9 @@
       radioAudio.volume = e.target.value / 100;
     });
 
-    // Connect radio audio to Oracle's animation
+    // Connect radio audio to Oracle's animation - NOW IN SAME SCOPE!
     radioAudio.addEventListener('play', () => {
-      isTalking = true; // Animate Oracle's mouth and body
+      isTalking = true; // This now works - same scope as the animation
     });
 
     radioAudio.addEventListener('ended', () => {
@@ -1228,9 +1191,47 @@
       });
     }
 
-    function toggleRadioWidget() {
+    // Expose toggle function globally for onclick
+    window.toggleRadioWidget = function() {
       radioWidget.classList.toggle('collapsed');
-    }
+    };
+
   </script>
+
+  <!-- Radio Widget -->
+  <div class="radio-widget" id="radioWidget">
+    <button class="radio-toggle" onclick="toggleRadioWidget()">−</button>
+    <div class="radio-header">
+      <div class="radio-station">
+        <span class="radio-icon">🔮</span>
+        <div class="radio-info">
+          <span class="radio-name">Oracle Radio</span>
+          <span class="radio-host">~Your Cosmic Guide~</span>
+        </div>
+      </div>
+      <div class="radio-live">
+        <div class="radio-live-dot"></div>
+        <span>LIVE</span>
+      </div>
+    </div>
+    <div class="radio-visualizer" id="radioVisualizer"></div>
+    <div class="radio-text" id="radioText">The stars await... Press play to receive cosmic wisdom 🌟</div>
+    <div class="radio-controls">
+      <button class="radio-skip-btn" id="radioSkipBtn" title="Skip">
+        <svg viewBox="0 0 24 24"><path d="M5 4l10 8-10 8V4zm11 0h3v16h-3V4z"/></svg>
+      </button>
+      <button class="radio-play-btn" id="radioPlayBtn">
+        <svg class="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <svg class="pause-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+      </button>
+      <button class="radio-skip-btn" id="radioNextBtn" title="Next">
+        <svg viewBox="0 0 24 24"><path d="M5 4l10 8-10 8V4zm11 0h3v16h-3V4z"/></svg>
+      </button>
+    </div>
+    <div class="radio-volume">
+      <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+      <input type="range" class="radio-volume-slider" id="radioVolume" min="0" max="100" value="70">
+    </div>
+  </div>
 </body>
 </html>
