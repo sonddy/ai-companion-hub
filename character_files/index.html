@@ -67,8 +67,8 @@
       fill: #1da1f2;
     }
 
-    /* Radio button */
-    .radio-btn {
+    /* Info button */
+    .info-btn {
       position: fixed;
       top: 25px;
       left: 85px;
@@ -82,19 +82,245 @@
       justify-content: center;
       z-index: 100;
       transition: all 0.3s ease;
-      text-decoration: none;
+      cursor: pointer;
       font-size: 1.5rem;
+      color: #fff;
+      font-family: 'Orbitron', monospace;
+      font-weight: 700;
     }
-    .radio-btn:hover {
-      background: rgba(255, 107, 157, 0.3);
-      border-color: #ff6b9d;
+    .info-btn:hover {
+      background: rgba(179, 102, 255, 0.3);
+      border-color: #b366ff;
       transform: scale(1.1);
-      box-shadow: 0 0 20px rgba(255, 107, 157, 0.4);
-      animation: pulse-radio 1s ease-in-out infinite;
+      box-shadow: 0 0 20px rgba(179, 102, 255, 0.4);
     }
-    @keyframes pulse-radio {
-      0%, 100% { box-shadow: 0 0 20px rgba(255, 107, 157, 0.4); }
-      50% { box-shadow: 0 0 30px rgba(255, 107, 157, 0.6); }
+
+    /* Info Modal */
+    .info-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(10, 8, 18, 0.95);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.4s ease;
+      backdrop-filter: blur(10px);
+    }
+    .info-modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    .info-modal {
+      background: linear-gradient(135deg, rgba(21, 15, 26, 0.98) 0%, rgba(15, 10, 20, 0.98) 100%);
+      border: 1px solid rgba(179, 102, 255, 0.4);
+      border-radius: 25px;
+      max-width: 800px;
+      width: 90%;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 40px;
+      position: relative;
+      box-shadow: 0 0 60px rgba(179, 102, 255, 0.3), inset 0 0 30px rgba(179, 102, 255, 0.05);
+      transform: scale(0.9) translateY(20px);
+      transition: transform 0.4s ease;
+    }
+    .info-modal-overlay.active .info-modal {
+      transform: scale(1) translateY(0);
+    }
+    .info-modal-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 107, 157, 0.1);
+      border: 1px solid rgba(255, 107, 157, 0.3);
+      border-radius: 50%;
+      color: var(--accent-pink);
+      font-size: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+    .info-modal-close:hover {
+      background: rgba(255, 107, 157, 0.3);
+      transform: rotate(90deg);
+    }
+    .info-modal-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff, var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .info-modal-subtitle {
+      font-size: 14px;
+      color: var(--accent-cyan);
+      text-align: center;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 30px;
+    }
+    .info-section {
+      margin-bottom: 30px;
+    }
+    .info-section-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent-pink);
+      letter-spacing: 2px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .info-section-title::before {
+      content: '';
+      width: 20px;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent-pink), transparent);
+    }
+    .info-content {
+      color: var(--text-muted);
+      line-height: 1.8;
+      font-size: 15px;
+    }
+    .info-content p {
+      margin-bottom: 12px;
+    }
+    .info-feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .info-feature {
+      background: rgba(179, 102, 255, 0.05);
+      border: 1px solid rgba(179, 102, 255, 0.2);
+      border-radius: 12px;
+      padding: 15px;
+      transition: all 0.3s ease;
+    }
+    .info-feature:hover {
+      border-color: rgba(179, 102, 255, 0.5);
+      background: rgba(179, 102, 255, 0.1);
+    }
+    .info-feature-icon {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    .info-feature-name {
+      font-family: 'Orbitron', monospace;
+      font-size: 13px;
+      color: #fff;
+      margin-bottom: 5px;
+    }
+    .info-feature-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .info-roadmap {
+      margin-top: 15px;
+    }
+    .info-roadmap-item {
+      display: flex;
+      gap: 15px;
+      padding: 15px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .info-roadmap-item:last-child {
+      border-bottom: none;
+    }
+    .info-roadmap-status {
+      width: 80px;
+      font-size: 10px;
+      font-family: 'Orbitron', monospace;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      border-radius: 10px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .info-roadmap-status.done {
+      background: rgba(34, 211, 238, 0.2);
+      color: var(--accent-cyan);
+      border: 1px solid var(--accent-cyan);
+    }
+    .info-roadmap-status.progress {
+      background: rgba(255, 179, 102, 0.2);
+      color: var(--accent-gold);
+      border: 1px solid var(--accent-gold);
+    }
+    .info-roadmap-status.planned {
+      background: rgba(136, 136, 170, 0.2);
+      color: var(--text-muted);
+      border: 1px solid var(--text-muted);
+    }
+    .info-roadmap-text {
+      flex: 1;
+    }
+    .info-roadmap-title {
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .info-roadmap-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .info-tech-stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .info-tech-tag {
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 15px;
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(34, 211, 238, 0.3);
+    }
+    .info-modal::-webkit-scrollbar {
+      width: 6px;
+    }
+    .info-modal::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 3px;
+    }
+    .info-modal::-webkit-scrollbar-thumb {
+      background: rgba(179, 102, 255, 0.4);
+      border-radius: 3px;
+    }
+    @media (max-width: 600px) {
+      .info-modal {
+        padding: 25px 20px;
+        max-height: 90vh;
+      }
+      .info-modal-title {
+        font-size: 22px;
+      }
+      .info-feature-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     /* Animated starfield background */
@@ -742,10 +968,136 @@
     </svg>
   </a>
 
-  <!-- Radio button -->
-  <a href="radio.html" class="radio-btn" title="AI Radio - Live Streaming">
-    📻
-  </a>
+  <!-- Info button -->
+  <div class="info-btn" onclick="openInfoModal()" title="About AI Companion Hub">
+    ?
+  </div>
+
+  <!-- Info Modal -->
+  <div class="info-modal-overlay" id="infoModal">
+    <div class="info-modal">
+      <button class="info-modal-close" onclick="closeInfoModal()">×</button>
+      
+      <h2 class="info-modal-title">AI Companion Hub</h2>
+      <p class="info-modal-subtitle">◇ Project Overview ◇</p>
+
+      <div class="info-section">
+        <h3 class="info-section-title">What Is This?</h3>
+        <div class="info-content">
+          <p>AI Companion Hub is a collection of interactive AI companions, each with unique personalities, voices, and 3D avatars. Chat with them using text or voice, watch them animate in real-time, and enjoy their personalized AI radio stations!</p>
+          <p>Each companion uses advanced AI (GPT-4) for intelligent conversations and realistic text-to-speech for natural voice responses. The 3D VRM models animate based on speech, creating an immersive experience.</p>
+        </div>
+      </div>
+
+      <div class="info-section">
+        <h3 class="info-section-title">Current Features</h3>
+        <div class="info-feature-grid">
+          <div class="info-feature">
+            <div class="info-feature-icon">💬</div>
+            <div class="info-feature-name">AI Chat</div>
+            <div class="info-feature-desc">Intelligent conversations powered by GPT-4 with unique personalities</div>
+          </div>
+          <div class="info-feature">
+            <div class="info-feature-icon">🎙️</div>
+            <div class="info-feature-name">Voice Chat</div>
+            <div class="info-feature-desc">Speak to companions using your microphone with speech recognition</div>
+          </div>
+          <div class="info-feature">
+            <div class="info-feature-icon">🗣️</div>
+            <div class="info-feature-name">Text-to-Speech</div>
+            <div class="info-feature-desc">Hear companions respond with unique voices via OpenAI TTS</div>
+          </div>
+          <div class="info-feature">
+            <div class="info-feature-icon">👤</div>
+            <div class="info-feature-name">3D Avatars</div>
+            <div class="info-feature-desc">VRM models with real-time lip sync and body animations</div>
+          </div>
+          <div class="info-feature">
+            <div class="info-feature-icon">📻</div>
+            <div class="info-feature-name">AI Radio</div>
+            <div class="info-feature-desc">Each companion has their own radio station with background music</div>
+          </div>
+          <div class="info-feature">
+            <div class="info-feature-icon">✨</div>
+            <div class="info-feature-name">Touch Interaction</div>
+            <div class="info-feature-desc">Click on companions for spontaneous reactions and responses</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-section">
+        <h3 class="info-section-title">Meet The Companions</h3>
+        <div class="info-content">
+          <p><strong style="color: var(--accent-pink);">💖 Nicky</strong> — Your flirty, playful companion. She's charming, teasing, and always knows how to make you smile. Perfect for fun conversations and late-night chats.</p>
+          <p><strong style="color: var(--accent-cyan);">🌟 Luna</strong> — Your sweet, cheerful assistant. Always happy, helpful, and ready to support you with anything. Like having a best friend who's always there.</p>
+          <p><strong style="color: #b366ff;">🔮 Oracle</strong> — Your mystical spiritual guide. Expert in astrology, numerology, tarot, and cosmic wisdom. Discover your destiny among the stars.</p>
+        </div>
+      </div>
+
+      <div class="info-section">
+        <h3 class="info-section-title">Roadmap & Future Plans</h3>
+        <div class="info-roadmap">
+          <div class="info-roadmap-item">
+            <span class="info-roadmap-status done">Done</span>
+            <div class="info-roadmap-text">
+              <div class="info-roadmap-title">Core Companions (Nicky, Luna, Oracle)</div>
+              <div class="info-roadmap-desc">Chat, voice, 3D avatars, animations, and radio for all three</div>
+            </div>
+          </div>
+          <div class="info-roadmap-item">
+            <span class="info-roadmap-status done">Done</span>
+            <div class="info-roadmap-text">
+              <div class="info-roadmap-title">AI Radio Stations</div>
+              <div class="info-roadmap-desc">Personalized radio with background music for each companion</div>
+            </div>
+          </div>
+          <div class="info-roadmap-item">
+            <span class="info-roadmap-status progress">In Progress</span>
+            <div class="info-roadmap-text">
+              <div class="info-roadmap-title">Cypher - Crypto Analyst</div>
+              <div class="info-roadmap-desc">Real-time Solana token data, DexScreener integration, blockchain analytics</div>
+            </div>
+          </div>
+          <div class="info-roadmap-item">
+            <span class="info-roadmap-status planned">Planned</span>
+            <div class="info-roadmap-text">
+              <div class="info-roadmap-title">Muse - Creative AI</div>
+              <div class="info-roadmap-desc">Art history, music theory, creative inspiration, and artistic guidance</div>
+            </div>
+          </div>
+          <div class="info-roadmap-item">
+            <span class="info-roadmap-status planned">Planned</span>
+            <div class="info-roadmap-text">
+              <div class="info-roadmap-title">Memory & Context</div>
+              <div class="info-roadmap-desc">Long-term memory so companions remember your conversations</div>
+            </div>
+          </div>
+          <div class="info-roadmap-item">
+            <span class="info-roadmap-status planned">Planned</span>
+            <div class="info-roadmap-text">
+              <div class="info-roadmap-title">Multi-platform Support</div>
+              <div class="info-roadmap-desc">Mobile app, Discord bot, and API integrations</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-section">
+        <h3 class="info-section-title">Tech Stack</h3>
+        <div class="info-tech-stack">
+          <span class="info-tech-tag">OpenAI GPT-4</span>
+          <span class="info-tech-tag">OpenAI TTS</span>
+          <span class="info-tech-tag">Three.js</span>
+          <span class="info-tech-tag">VRM Avatars</span>
+          <span class="info-tech-tag">FastAPI</span>
+          <span class="info-tech-tag">Netlify</span>
+          <span class="info-tech-tag">Web Speech API</span>
+          <span class="info-tech-tag">Web Audio API</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
 
   <!-- Starfield background -->
   <div class="starfield" id="starfield"></div>
@@ -905,6 +1257,31 @@
       const x = (e.clientX / window.innerWidth - 0.5) * 20;
       const y = (e.clientY / window.innerHeight - 0.5) * 20;
       document.querySelector('.nebula').style.transform = `translate(${x}px, ${y}px)`;
+    });
+
+    // Info Modal functions
+    function openInfoModal() {
+      document.getElementById('infoModal').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeInfoModal() {
+      document.getElementById('infoModal').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    // Close modal on overlay click
+    document.getElementById('infoModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('infoModal')) {
+        closeInfoModal();
+      }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeInfoModal();
+      }
     });
   </script>
 </body>
