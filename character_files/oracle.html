@@ -1269,7 +1269,7 @@
       fadeInDebussy();
 
       try {
-        const res = await fetch(`ORACLE_RADIO_API`, {
+        const res = await fetch(ORACLE_RADIO_API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})
