@@ -1364,6 +1364,7 @@
     // Radio Widget for Luna - connects to the 3D model animation
     // Uses Luna's dedicated radio server on port 8012
     const LUNA_RADIO_API = 'http://127.0.0.1:8012';
+    const LUNA_BG_MUSIC = '../music/Happy x Chance The Rapper Type Beat _Fun_ _ Upbeat Hip-hop Instrumental.mp3';
     
     let radioPlaying = false;
     let radioLoading = false;
@@ -1371,6 +1372,13 @@
     let radioContext = null;
     let radioAnalyser = null;
     let radioAnimId = null;
+    
+    // Background music for loading transitions
+    let bgMusic = new Audio(LUNA_BG_MUSIC);
+    bgMusic.volume = 0.4; // Soft background volume
+    let fadeInInterval = null;
+    let fadeOutInterval = null;
+    let bgMusicTargetVolume = 0.4;
 
     const radioPlayBtn = document.getElementById('radioPlayBtn');
     const radioSkipBtn = document.getElementById('radioSkipBtn');
@@ -1403,11 +1411,53 @@
     radioNextBtn.addEventListener('click', loadRadioSegment);
     radioVolume.addEventListener('input', (e) => {
       radioAudio.volume = e.target.value / 100;
+      bgMusicTargetVolume = (e.target.value / 100) * 0.4;
+      if (!bgMusic.paused) {
+        bgMusic.volume = bgMusicTargetVolume;
+      }
     });
+
+    // Background music fade functions
+    function fadeInBgMusic() {
+      if (fadeInInterval) clearInterval(fadeInInterval);
+      if (fadeOutInterval) clearInterval(fadeOutInterval);
+      bgMusic.currentTime = 0; // Reset to beginning
+      bgMusic.volume = 0;
+      bgMusic.play().catch(() => {});
+      let vol = 0;
+      fadeInInterval = setInterval(() => {
+        vol += 0.05;
+        if (vol >= bgMusicTargetVolume) {
+          bgMusic.volume = bgMusicTargetVolume;
+          clearInterval(fadeInInterval);
+          fadeInInterval = null;
+        } else {
+          bgMusic.volume = vol;
+        }
+      }, 50);
+    }
+
+    function fadeOutBgMusic() {
+      if (fadeInInterval) clearInterval(fadeInInterval);
+      if (fadeOutInterval) clearInterval(fadeOutInterval);
+      let vol = bgMusic.volume;
+      fadeOutInterval = setInterval(() => {
+        vol -= 0.05;
+        if (vol <= 0) {
+          bgMusic.volume = 0;
+          bgMusic.pause();
+          clearInterval(fadeOutInterval);
+          fadeOutInterval = null;
+        } else {
+          bgMusic.volume = vol;
+        }
+      }, 30);
+    }
 
     // Connect radio audio to Luna's animation - NOW IN SAME SCOPE!
     radioAudio.addEventListener('play', () => {
       isTalking = true; // This now works - same scope as the animation
+      fadeOutBgMusic(); // Fade out background music when Luna speaks
     });
 
     radioAudio.addEventListener('ended', () => {
@@ -1435,6 +1485,8 @@
       radioPlaying = false;
       radioPlayBtn.classList.remove('playing');
       radioAudio.pause();
+      bgMusic.pause();
+      bgMusic.volume = 0;
       isTalking = false;
       stopRadioVisualizer();
     }
@@ -1443,6 +1495,7 @@
       if (radioLoading) return;
       radioLoading = true;
       radioText.innerHTML = '<span class="radio-loading"></span> Luna is getting ready!';
+      fadeInBgMusic(); // Play background music while loading
 
       try {
         const res = await fetch(`${LUNA_RADIO_API}/radio`, {
@@ -1466,6 +1519,7 @@
         radioPlaying = false;
         radioPlayBtn.classList.remove('playing');
         isTalking = false;
+        fadeOutBgMusic();
       } finally {
         radioLoading = false;
       }
