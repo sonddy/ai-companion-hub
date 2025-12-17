@@ -1082,8 +1082,8 @@
 
   <script>
     // Radio Widget for Oracle - connects to the 3D model animation
-    const RADIO_API = 'http://127.0.0.1:8010';
-    const CHARACTER = 'oracle';
+    // Uses Oracle's dedicated radio server on port 8013
+    const ORACLE_RADIO_API = 'http://127.0.0.1:8013';
     
     let radioPlaying = false;
     let radioLoading = false;
@@ -1165,7 +1165,7 @@
       radioText.innerHTML = '<span class="radio-loading"></span> Consulting the cosmos...';
 
       try {
-        const res = await fetch(`${RADIO_API}/stream/${CHARACTER}`, {
+        const res = await fetch(`${ORACLE_RADIO_API}/radio`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})

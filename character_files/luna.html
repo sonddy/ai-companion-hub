@@ -1399,8 +1399,8 @@
 
   <script>
     // Radio Widget for Luna - connects to the 3D model animation
-    const RADIO_API = 'http://127.0.0.1:8010';
-    const CHARACTER = 'luna';
+    // Uses Luna's dedicated radio server on port 8012
+    const LUNA_RADIO_API = 'http://127.0.0.1:8012';
     
     let radioPlaying = false;
     let radioLoading = false;
@@ -1482,7 +1482,7 @@
       radioText.innerHTML = '<span class="radio-loading"></span> Luna is getting ready!';
 
       try {
-        const res = await fetch(`${RADIO_API}/stream/${CHARACTER}`, {
+        const res = await fetch(`${LUNA_RADIO_API}/radio`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})
