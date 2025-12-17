@@ -589,29 +589,103 @@
       }
     }
     
-    @media (max-width: 900px) {
+    /* Mobile Mode Toggle */
+    .mobile-toggle {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(135deg, rgba(255, 245, 248, 0.98), rgba(255, 240, 245, 0.98));
+      border-top: 2px solid rgba(255, 107, 157, 0.3);
+      padding: 12px 20px;
+      z-index: 300;
+      backdrop-filter: blur(20px);
+    }
+    .mobile-toggle-btns {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    .mobile-toggle-btn {
+      flex: 1;
+      max-width: 150px;
+      padding: 12px 20px;
+      border: 2px solid rgba(255, 107, 157, 0.3);
+      border-radius: 25px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: inherit;
+    }
+    .mobile-toggle-btn.active {
+      background: linear-gradient(135deg, rgba(255, 107, 157, 0.3), rgba(255, 143, 191, 0.2));
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 20px rgba(255, 107, 157, 0.3);
+    }
+    .mobile-toggle-btn:not(.active):hover {
+      border-color: rgba(255, 107, 157, 0.5);
+      color: var(--text);
+    }
+    
+    @media (max-width: 768px) {
+      .mobile-toggle {
+        display: block;
+      }
       .chat-interface {
-        bottom: 140px;
-        max-height: 40vh;
+        display: none;
+        right: 10px;
+        left: 10px;
+        width: auto;
+        top: 60px;
+        bottom: 80px;
+        transform: none;
+        max-height: none;
+        height: auto;
+      }
+      .chat-interface.mobile-active {
+        display: flex;
       }
       .radio-widget {
-        bottom: 10px;
-        top: auto;
+        display: none;
+        top: 60px;
         left: 10px;
         right: 10px;
+        bottom: auto;
         min-width: auto;
         max-width: none;
       }
-    }
-    @media (max-width: 480px) {
-      .chat-interface {
-        bottom: 130px;
-        max-height: 35vh;
+      .radio-widget.mobile-active {
+        display: block;
       }
-      .radio-widget {
-        bottom: 8px;
-        left: 8px;
-        right: 8px;
+      .title-overlay {
+        top: 15px;
+        left: 15px;
+      }
+      .title-overlay h1 {
+        font-size: 28px;
+      }
+      .title-overlay p {
+        font-size: 12px;
+      }
+      .back-btn {
+        top: 10px;
+        right: 10px;
+        padding: 8px 15px;
+        font-size: 12px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .radio-widget.mobile-active {
         padding: 10px 12px;
       }
       .radio-name {
@@ -631,6 +705,9 @@
       .radio-skip-btn {
         width: 28px;
         height: 28px;
+      }
+      .chat-messages {
+        max-height: calc(100vh - 300px);
       }
     }
   </style>
@@ -1728,10 +1805,41 @@
       <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
       <input type="range" class="radio-volume-slider" id="radioVolume" min="0" max="100" value="70">
     </div>
-    <div class="radio-mobile-notice">
-      📱 Radio requires local server (desktop only)
+  </div>
+
+  <!-- Mobile Toggle -->
+  <div class="mobile-toggle">
+    <div class="mobile-toggle-btns">
+      <button class="mobile-toggle-btn active" id="chatToggle" onclick="switchToChat()">
+        💬 Chat
+      </button>
+      <button class="mobile-toggle-btn" id="radioToggle" onclick="switchToRadio()">
+        📻 Radio
+      </button>
     </div>
   </div>
+
+  <script>
+    // Mobile toggle functionality
+    function switchToChat() {
+      document.getElementById('chatToggle').classList.add('active');
+      document.getElementById('radioToggle').classList.remove('active');
+      document.querySelector('.chat-interface').classList.add('mobile-active');
+      document.getElementById('radioWidget').classList.remove('mobile-active');
+    }
+    
+    function switchToRadio() {
+      document.getElementById('radioToggle').classList.add('active');
+      document.getElementById('chatToggle').classList.remove('active');
+      document.getElementById('radioWidget').classList.add('mobile-active');
+      document.querySelector('.chat-interface').classList.remove('mobile-active');
+    }
+    
+    // Initialize on mobile - show chat by default
+    if (window.innerWidth <= 768) {
+      document.querySelector('.chat-interface').classList.add('mobile-active');
+    }
+  </script>
 </body>
 </html>
 
