@@ -1048,16 +1048,14 @@
     // Uses Oracle's dedicated radio server on port 8013
     const ORACLE_RADIO_API = 'http://127.0.0.1:8013';
     
-    // Background music for transitions - Mystical/ambient vibe for Oracle
-    // Using Mixkit free music CDN (reliable source)
-    const ORACLE_BG_MUSIC = 'https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3'; // Ambient mystical
+    // Debussy - Clair de Lune for mystical transitions
+    const DEBUSSY_MUSIC = '../music/Debussy - Clair de Lune.mp3';
+    let bgMusic = new Audio(DEBUSSY_MUSIC);
+    bgMusic.volume = 0.4; // Soft background volume
     
     let radioPlaying = false;
     let radioLoading = false;
     let radioAudio = new Audio();
-    let bgMusic = new Audio(ORACLE_BG_MUSIC);
-    bgMusic.loop = true;
-    bgMusic.volume = 0.3; // Lower volume for background
     let radioContext = null;
     let radioAnalyser = null;
     let radioAnimId = null;
@@ -1093,13 +1091,46 @@
     radioNextBtn.addEventListener('click', loadRadioSegment);
     radioVolume.addEventListener('input', (e) => {
       radioAudio.volume = e.target.value / 100;
-      bgMusic.volume = (e.target.value / 100) * 0.3; // BG music at 30% of main
+      // Debussy plays at 40% of main volume
+      if (bgMusic.volume > 0) {
+        bgMusic.volume = (e.target.value / 100) * 0.4;
+      }
     });
+
+    // Debussy music control - plays during loading/transitions
+    function fadeInDebussy() {
+      bgMusic.volume = 0;
+      bgMusic.play().catch(() => {}); // Ignore autoplay errors
+      let vol = 0;
+      const fadeIn = setInterval(() => {
+        vol += 0.05;
+        if (vol >= 0.4) {
+          bgMusic.volume = 0.4;
+          clearInterval(fadeIn);
+        } else {
+          bgMusic.volume = vol;
+        }
+      }, 50);
+    }
+
+    function fadeOutDebussy() {
+      let vol = bgMusic.volume;
+      const fadeOut = setInterval(() => {
+        vol -= 0.05;
+        if (vol <= 0) {
+          bgMusic.volume = 0;
+          bgMusic.pause();
+          clearInterval(fadeOut);
+        } else {
+          bgMusic.volume = vol;
+        }
+      }, 30);
+    }
 
     // Connect radio audio to Oracle's animation - NOW IN SAME SCOPE!
     radioAudio.addEventListener('play', () => {
       isTalking = true; // This now works - same scope as the animation
-      fadeOutBgMusic(); // Fade out background music when voice starts
+      fadeOutDebussy(); // Fade out Debussy when Oracle speaks
     });
 
     radioAudio.addEventListener('ended', () => {
@@ -1116,34 +1147,6 @@
       radioText.textContent = 'The cosmic connection wavers... seeking clarity...';
       setTimeout(() => { if (radioPlaying) loadRadioSegment(); }, 2000);
     });
-
-    // Fade in/out background music
-    function fadeInBgMusic() {
-      console.log('🎵 Starting background music...');
-      bgMusic.currentTime = 0;
-      bgMusic.volume = 0.3; // Start at full volume immediately
-      bgMusic.play().then(() => {
-        console.log('🎵 Background music playing!');
-      }).catch((e) => {
-        console.log('🎵 Music autoplay blocked, will play on next user interaction');
-      });
-    }
-
-    function fadeOutBgMusic() {
-      console.log('🎵 Fading out background music...');
-      let vol = bgMusic.volume;
-      const fadeOut = setInterval(() => {
-        vol -= 0.05;
-        if (vol <= 0) {
-          bgMusic.volume = 0;
-          bgMusic.pause();
-          clearInterval(fadeOut);
-          console.log('🎵 Background music stopped');
-        } else {
-          bgMusic.volume = vol;
-        }
-      }, 30);
-    }
 
     async function playRadio() {
       radioPlaying = true;
@@ -1166,8 +1169,8 @@
       radioLoading = true;
       radioText.innerHTML = '<span class="radio-loading"></span> Consulting the cosmos...';
       
-      // Play background music while loading
-      fadeInBgMusic();
+      // Play Debussy while loading the next segment
+      fadeInDebussy();
 
       try {
         const res = await fetch(`${ORACLE_RADIO_API}/radio`, {
@@ -1183,7 +1186,7 @@
 
         const blob = await res.blob();
         radioAudio.src = URL.createObjectURL(blob);
-        await radioAudio.play(); // This triggers fadeOutBgMusic via 'play' event
+        await radioAudio.play();
         startRadioVisualizer();
       } catch (err) {
         console.error('Radio error:', err);
@@ -1191,7 +1194,7 @@
         radioPlaying = false;
         radioPlayBtn.classList.remove('playing');
         isTalking = false;
-        fadeOutBgMusic();
+        fadeOutDebussy();
       } finally {
         radioLoading = false;
       }

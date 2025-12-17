@@ -1365,16 +1365,9 @@
     // Uses Luna's dedicated radio server on port 8012
     const LUNA_RADIO_API = 'http://127.0.0.1:8012';
     
-    // Background music for transitions - Happy/upbeat vibe for Luna
-    // Using Mixkit free music CDN (reliable source)
-    const LUNA_BG_MUSIC = 'https://assets.mixkit.co/music/preview/mixkit-a-very-happy-christmas-897.mp3'; // Happy cheerful
-    
     let radioPlaying = false;
     let radioLoading = false;
     let radioAudio = new Audio();
-    let bgMusic = new Audio(LUNA_BG_MUSIC);
-    bgMusic.loop = true;
-    bgMusic.volume = 0.3; // Lower volume for background
     let radioContext = null;
     let radioAnalyser = null;
     let radioAnimId = null;
@@ -1410,13 +1403,11 @@
     radioNextBtn.addEventListener('click', loadRadioSegment);
     radioVolume.addEventListener('input', (e) => {
       radioAudio.volume = e.target.value / 100;
-      bgMusic.volume = (e.target.value / 100) * 0.3; // BG music at 30% of main
     });
 
     // Connect radio audio to Luna's animation - NOW IN SAME SCOPE!
     radioAudio.addEventListener('play', () => {
       isTalking = true; // This now works - same scope as the animation
-      fadeOutBgMusic(); // Fade out background music when voice starts
     });
 
     radioAudio.addEventListener('ended', () => {
@@ -1434,34 +1425,6 @@
       setTimeout(() => { if (radioPlaying) loadRadioSegment(); }, 2000);
     });
 
-    // Fade in/out background music
-    function fadeInBgMusic() {
-      console.log('🎵 Starting background music...');
-      bgMusic.currentTime = 0;
-      bgMusic.volume = 0.3; // Start at full volume immediately
-      bgMusic.play().then(() => {
-        console.log('🎵 Background music playing!');
-      }).catch((e) => {
-        console.log('🎵 Music autoplay blocked, will play on next user interaction');
-      });
-    }
-
-    function fadeOutBgMusic() {
-      console.log('🎵 Fading out background music...');
-      let vol = bgMusic.volume;
-      const fadeOut = setInterval(() => {
-        vol -= 0.05;
-        if (vol <= 0) {
-          bgMusic.volume = 0;
-          bgMusic.pause();
-          clearInterval(fadeOut);
-          console.log('🎵 Background music stopped');
-        } else {
-          bgMusic.volume = vol;
-        }
-      }, 30);
-    }
-
     async function playRadio() {
       radioPlaying = true;
       radioPlayBtn.classList.add('playing');
@@ -1472,8 +1435,6 @@
       radioPlaying = false;
       radioPlayBtn.classList.remove('playing');
       radioAudio.pause();
-      bgMusic.pause();
-      bgMusic.volume = 0;
       isTalking = false;
       stopRadioVisualizer();
     }
@@ -1482,9 +1443,6 @@
       if (radioLoading) return;
       radioLoading = true;
       radioText.innerHTML = '<span class="radio-loading"></span> Luna is getting ready!';
-      
-      // Play background music while loading
-      fadeInBgMusic();
 
       try {
         const res = await fetch(`${LUNA_RADIO_API}/radio`, {
@@ -1500,7 +1458,7 @@
 
         const blob = await res.blob();
         radioAudio.src = URL.createObjectURL(blob);
-        await radioAudio.play(); // This triggers fadeOutBgMusic via 'play' event
+        await radioAudio.play();
         startRadioVisualizer();
       } catch (err) {
         console.error('Radio error:', err);
@@ -1508,7 +1466,6 @@
         radioPlaying = false;
         radioPlayBtn.classList.remove('playing');
         isTalking = false;
-        fadeOutBgMusic();
       } finally {
         radioLoading = false;
       }
