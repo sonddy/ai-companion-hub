@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Radio - Live Streaming</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #050508;
+      --bg-panel: rgba(15, 12, 20, 0.9);
+      --luna-primary: #ff6b9d;
+      --luna-secondary: #ffb3d0;
+      --luna-glow: rgba(255, 107, 157, 0.5);
+      --oracle-primary: #b366ff;
+      --oracle-secondary: #d4a3ff;
+      --oracle-glow: rgba(179, 102, 255, 0.5);
+      --nicky-primary: #22d3ee;
+      --nicky-secondary: #67e8f9;
+      --nicky-glow: rgba(34, 211, 238, 0.5);
+      --text: #e8e8f0;
+      --text-muted: #6b6b80;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text);
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Animated background */
+    .radio-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      background: 
+        radial-gradient(ellipse at 50% 50%, var(--current-glow, rgba(255, 107, 157, 0.15)) 0%, transparent 60%);
+      transition: background 1s ease;
+    }
+
+    /* Scanlines */
+    .scanlines {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.1) 2px,
+        rgba(0, 0, 0, 0.1) 4px
+      );
+      pointer-events: none;
+    }
+
+    /* Grid floor */
+    .grid-floor {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 40%;
+      z-index: 1;
+      background: 
+        linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.8) 100%),
+        repeating-linear-gradient(
+          90deg,
+          var(--current-color, var(--luna-primary)) 0px,
+          transparent 1px,
+          transparent 60px
+        ),
+        repeating-linear-gradient(
+          0deg,
+          var(--current-color, var(--luna-primary)) 0px,
+          transparent 1px,
+          transparent 60px
+        );
+      opacity: 0.15;
+      transform: perspective(500px) rotateX(60deg);
+      transform-origin: bottom;
+      transition: background 0.5s ease;
+    }
+
+    /* Navigation */
+    .nav-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 30px;
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 30px;
+      color: var(--text);
+      text-decoration: none;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.85rem;
+      transition: all 0.3s ease;
+    }
+
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--current-color, var(--luna-primary));
+      color: var(--current-color, var(--luna-primary));
+    }
+
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(255, 50, 50, 0.2);
+      border: 1px solid rgba(255, 50, 50, 0.5);
+      border-radius: 20px;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.8rem;
+      color: #ff5050;
+      animation: pulse-live 2s ease-in-out infinite;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: #ff5050;
+      border-radius: 50%;
+      animation: blink 1s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    @keyframes pulse-live {
+      0%, 100% { box-shadow: 0 0 10px rgba(255, 50, 50, 0.3); }
+      50% { box-shadow: 0 0 20px rgba(255, 50, 50, 0.5); }
+    }
+
+    /* Main container */
+    .radio-container {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 100px 20px 40px;
+    }
+
+    /* Station selector */
+    .station-selector {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .station-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 20px 30px;
+      background: var(--bg-panel);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      min-width: 140px;
+    }
+
+    .station-btn:hover {
+      transform: translateY(-5px);
+      border-color: var(--station-color);
+      box-shadow: 0 10px 30px var(--station-glow);
+    }
+
+    .station-btn.active {
+      border-color: var(--station-color);
+      box-shadow: 0 0 30px var(--station-glow);
+      background: linear-gradient(135deg, var(--bg-panel), rgba(var(--station-rgb), 0.1));
+    }
+
+    .station-btn[data-station="luna"] {
+      --station-color: var(--luna-primary);
+      --station-glow: var(--luna-glow);
+      --station-rgb: 255, 107, 157;
+    }
+
+    .station-btn[data-station="oracle"] {
+      --station-color: var(--oracle-primary);
+      --station-glow: var(--oracle-glow);
+      --station-rgb: 179, 102, 255;
+    }
+
+    .station-btn[data-station="nicky"] {
+      --station-color: var(--nicky-primary);
+      --station-glow: var(--nicky-glow);
+      --station-rgb: 34, 211, 238;
+    }
+
+    .station-icon {
+      font-size: 2.5rem;
+    }
+
+    .station-name {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--station-color);
+    }
+
+    .station-freq {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    /* Radio player */
+    .radio-player {
+      background: var(--bg-panel);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 30px;
+      padding: 40px 50px;
+      width: 100%;
+      max-width: 600px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Station display */
+    .station-display {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .current-station {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--current-color, var(--luna-primary));
+      text-shadow: 0 0 20px var(--current-glow, var(--luna-glow));
+      margin-bottom: 5px;
+      transition: all 0.5s ease;
+    }
+
+    .current-host {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* Audio visualizer */
+    .visualizer {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 4px;
+      height: 80px;
+      margin-bottom: 30px;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 15px;
+    }
+
+    .bar {
+      width: 6px;
+      background: linear-gradient(to top, var(--current-color, var(--luna-primary)), var(--current-secondary, var(--luna-secondary)));
+      border-radius: 3px;
+      transition: height 0.1s ease, background 0.5s ease;
+      min-height: 5px;
+    }
+
+    /* Now playing */
+    .now-playing {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 30px;
+      min-height: 100px;
+    }
+
+    .now-playing-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+    }
+
+    .now-playing-text {
+      font-size: 1rem;
+      line-height: 1.6;
+      color: var(--text);
+      opacity: 0.9;
+    }
+
+    .loading-text {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 30px;
+    }
+
+    .play-btn {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--current-color, var(--luna-primary)), var(--current-secondary, var(--luna-secondary)));
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 30px var(--current-glow, var(--luna-glow));
+    }
+
+    .play-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 15px 40px var(--current-glow, var(--luna-glow));
+    }
+
+    .play-btn:active {
+      transform: scale(0.95);
+    }
+
+    .play-btn svg {
+      width: 30px;
+      height: 30px;
+      fill: white;
+    }
+
+    .play-btn.playing .play-icon { display: none; }
+    .play-btn.playing .pause-icon { display: block; }
+    .play-btn:not(.playing) .play-icon { display: block; }
+    .play-btn:not(.playing) .pause-icon { display: none; }
+
+    .skip-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .skip-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: var(--current-color, var(--luna-primary));
+    }
+
+    .skip-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: var(--text);
+    }
+
+    /* Volume */
+    .volume-control {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .volume-icon {
+      width: 24px;
+      height: 24px;
+      fill: var(--text-muted);
+    }
+
+    .volume-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      outline: none;
+    }
+
+    .volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: var(--current-color, var(--luna-primary));
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 10px var(--current-glow, var(--luna-glow));
+    }
+
+    .volume-slider::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      background: var(--current-color, var(--luna-primary));
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+    }
+
+    /* Status bar */
+    .status-bar {
+      text-align: center;
+      margin-top: 20px;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .status-bar.error {
+      color: #ff5050;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .station-selector {
+        flex-direction: column;
+        width: 100%;
+        max-width: 300px;
+      }
+
+      .station-btn {
+        flex-direction: row;
+        justify-content: flex-start;
+        padding: 15px 20px;
+      }
+
+      .radio-player {
+        padding: 30px;
+      }
+
+      .current-station {
+        font-size: 1.4rem;
+      }
+    }
+
+    /* Loading animation */
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--current-color, var(--luna-primary));
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background -->
+  <div class="radio-bg"></div>
+  <div class="scanlines"></div>
+  <div class="grid-floor"></div>
+
+  <!-- Navigation -->
+  <nav class="nav-bar">
+    <a href="index.html" class="back-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      Back to Hub
+    </a>
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      <span>LIVE</span>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="radio-container">
+    <!-- Station Selector -->
+    <div class="station-selector">
+      <button class="station-btn active" data-station="luna">
+        <span class="station-icon">🌙</span>
+        <span class="station-name">Luna</span>
+        <span class="station-freq">Feel-Good FM</span>
+      </button>
+      <button class="station-btn" data-station="oracle">
+        <span class="station-icon">🔮</span>
+        <span class="station-name">Oracle</span>
+        <span class="station-freq">Cosmic Radio</span>
+      </button>
+      <button class="station-btn" data-station="nicky">
+        <span class="station-icon">🎮</span>
+        <span class="station-name">Nicky</span>
+        <span class="station-freq">Neon Wave</span>
+      </button>
+    </div>
+
+    <!-- Radio Player -->
+    <div class="radio-player">
+      <!-- Station Display -->
+      <div class="station-display">
+        <div class="current-station">Feel-Good FM</div>
+        <div class="current-host">Hosted by Luna</div>
+      </div>
+
+      <!-- Visualizer -->
+      <div class="visualizer" id="visualizer">
+        <!-- Bars will be generated by JS -->
+      </div>
+
+      <!-- Now Playing -->
+      <div class="now-playing">
+        <div class="now-playing-label">📻 Now Playing</div>
+        <div class="now-playing-text" id="nowPlayingText">
+          <span class="loading-text">Click play to start the stream...</span>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls">
+        <button class="skip-btn" id="skipBtn" title="Skip to next segment">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 4l10 8-10 8V4zm11 0h3v16h-3V4z"/>
+          </svg>
+        </button>
+        <button class="play-btn" id="playBtn">
+          <svg class="play-icon" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+          <svg class="pause-icon" viewBox="0 0 24 24">
+            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+          </svg>
+        </button>
+        <button class="skip-btn" id="nextBtn" title="Next segment">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 4l10 8-10 8V4zm11 0h3v16h-3V4z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Volume -->
+      <div class="volume-control">
+        <svg class="volume-icon" viewBox="0 0 24 24">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+        </svg>
+        <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="80">
+      </div>
+
+      <!-- Status -->
+      <div class="status-bar" id="statusBar">Ready to stream</div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration
+    const RADIO_API_URL = 'http://127.0.0.1:8010';
+    
+    // Station themes
+    const STATIONS = {
+      luna: {
+        name: 'Feel-Good FM',
+        host: 'Luna',
+        color: '#ff6b9d',
+        secondary: '#ffb3d0',
+        glow: 'rgba(255, 107, 157, 0.5)'
+      },
+      oracle: {
+        name: 'Cosmic Radio',
+        host: 'Oracle',
+        color: '#b366ff',
+        secondary: '#d4a3ff',
+        glow: 'rgba(179, 102, 255, 0.5)'
+      },
+      nicky: {
+        name: 'Neon Wave Radio',
+        host: 'Nicky',
+        color: '#22d3ee',
+        secondary: '#67e8f9',
+        glow: 'rgba(34, 211, 238, 0.5)'
+      }
+    };
+
+    // State
+    let currentStation = 'luna';
+    let isPlaying = false;
+    let isLoading = false;
+    let audioContext = null;
+    let analyser = null;
+    let audio = new Audio();
+    let animationId = null;
+
+    // DOM Elements
+    const playBtn = document.getElementById('playBtn');
+    const skipBtn = document.getElementById('skipBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const nowPlayingText = document.getElementById('nowPlayingText');
+    const statusBar = document.getElementById('statusBar');
+    const visualizer = document.getElementById('visualizer');
+    const stationBtns = document.querySelectorAll('.station-btn');
+    const currentStationEl = document.querySelector('.current-station');
+    const currentHostEl = document.querySelector('.current-host');
+
+    // Initialize visualizer bars
+    function initVisualizer() {
+      visualizer.innerHTML = '';
+      for (let i = 0; i < 40; i++) {
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.style.height = '5px';
+        visualizer.appendChild(bar);
+      }
+    }
+
+    // Update theme colors
+    function updateTheme(station) {
+      const theme = STATIONS[station];
+      document.documentElement.style.setProperty('--current-color', theme.color);
+      document.documentElement.style.setProperty('--current-secondary', theme.secondary);
+      document.documentElement.style.setProperty('--current-glow', theme.glow);
+      
+      // Update station display
+      currentStationEl.textContent = theme.name;
+      currentHostEl.textContent = `Hosted by ${theme.host}`;
+      
+      // Update background
+      document.querySelector('.radio-bg').style.background = 
+        `radial-gradient(ellipse at 50% 50%, ${theme.glow} 0%, transparent 60%)`;
+    }
+
+    // Station selection
+    stationBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const station = btn.dataset.station;
+        if (station === currentStation) return;
+        
+        // Update active state
+        stationBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        currentStation = station;
+        updateTheme(station);
+        
+        // If playing, load new station
+        if (isPlaying) {
+          loadNextSegment();
+        } else {
+          nowPlayingText.innerHTML = '<span class="loading-text">Click play to start the stream...</span>';
+          statusBar.textContent = `Switched to ${STATIONS[station].name}`;
+        }
+      });
+    });
+
+    // Play/Pause
+    playBtn.addEventListener('click', () => {
+      if (isLoading) return;
+      
+      if (isPlaying) {
+        pauseRadio();
+      } else {
+        playRadio();
+      }
+    });
+
+    // Skip buttons
+    skipBtn.addEventListener('click', loadNextSegment);
+    nextBtn.addEventListener('click', loadNextSegment);
+
+    // Volume control
+    volumeSlider.addEventListener('input', (e) => {
+      audio.volume = e.target.value / 100;
+    });
+
+    // Initialize audio
+    audio.volume = volumeSlider.value / 100;
+
+    // Audio ended - load next
+    audio.addEventListener('ended', () => {
+      if (isPlaying) {
+        loadNextSegment();
+      }
+    });
+
+    // Audio error
+    audio.addEventListener('error', (e) => {
+      console.error('Audio error:', e);
+      statusBar.textContent = 'Error playing audio. Retrying...';
+      statusBar.classList.add('error');
+      setTimeout(() => {
+        if (isPlaying) loadNextSegment();
+      }, 2000);
+    });
+
+    async function playRadio() {
+      isPlaying = true;
+      playBtn.classList.add('playing');
+      await loadNextSegment();
+    }
+
+    function pauseRadio() {
+      isPlaying = false;
+      playBtn.classList.remove('playing');
+      audio.pause();
+      stopVisualizer();
+      statusBar.textContent = 'Paused';
+    }
+
+    async function loadNextSegment() {
+      if (isLoading) return;
+      
+      isLoading = true;
+      nowPlayingText.innerHTML = '<span class="loading-spinner"></span> Generating next segment...';
+      statusBar.textContent = 'Loading...';
+      statusBar.classList.remove('error');
+
+      try {
+        const response = await fetch(`${RADIO_API_URL}/stream/${currentStation}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        // Get text from header
+        const radioText = response.headers.get('X-Radio-Text');
+        if (radioText) {
+          nowPlayingText.textContent = decodeURIComponent(radioText);
+        }
+
+        // Get audio blob
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        // Play audio
+        audio.src = audioUrl;
+        await audio.play();
+        
+        startVisualizer();
+        statusBar.textContent = `Streaming ${STATIONS[currentStation].name}`;
+
+      } catch (error) {
+        console.error('Error loading segment:', error);
+        nowPlayingText.innerHTML = '<span class="loading-text">Error loading segment. Click play to retry...</span>';
+        statusBar.textContent = `Error: ${error.message}. Make sure the radio server is running.`;
+        statusBar.classList.add('error');
+        isPlaying = false;
+        playBtn.classList.remove('playing');
+        stopVisualizer();
+      } finally {
+        isLoading = false;
+      }
+    }
+
+    // Visualizer animation
+    function startVisualizer() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        const source = audioContext.createMediaElementSource(audio);
+        source.connect(analyser);
+        analyser.connect(audioContext.destination);
+        analyser.fftSize = 128;
+      }
+
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      const bars = visualizer.querySelectorAll('.bar');
+
+      function animate() {
+        animationId = requestAnimationFrame(animate);
+        analyser.getByteFrequencyData(dataArray);
+
+        bars.forEach((bar, i) => {
+          const value = dataArray[i] || 0;
+          const height = Math.max(5, (value / 255) * 70);
+          bar.style.height = `${height}px`;
+        });
+      }
+
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+
+      animate();
+    }
+
+    function stopVisualizer() {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+      
+      const bars = visualizer.querySelectorAll('.bar');
+      bars.forEach(bar => {
+        bar.style.height = '5px';
+      });
+    }
+
+    // Initialize
+    initVisualizer();
+    updateTheme(currentStation);
+  </script>
+</body>
+</html>
+

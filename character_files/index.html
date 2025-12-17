@@ -67,6 +67,36 @@
       fill: #1da1f2;
     }
 
+    /* Radio button */
+    .radio-btn {
+      position: fixed;
+      top: 25px;
+      left: 85px;
+      width: 50px;
+      height: 50px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      font-size: 1.5rem;
+    }
+    .radio-btn:hover {
+      background: rgba(255, 107, 157, 0.3);
+      border-color: #ff6b9d;
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(255, 107, 157, 0.4);
+      animation: pulse-radio 1s ease-in-out infinite;
+    }
+    @keyframes pulse-radio {
+      0%, 100% { box-shadow: 0 0 20px rgba(255, 107, 157, 0.4); }
+      50% { box-shadow: 0 0 30px rgba(255, 107, 157, 0.6); }
+    }
+
     /* Animated starfield background */
     .starfield {
       position: fixed;
@@ -710,6 +740,11 @@
     <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
     </svg>
+  </a>
+
+  <!-- Radio button -->
+  <a href="radio.html" class="radio-btn" title="AI Radio - Live Streaming">
+    📻
   </a>
 
   <!-- Starfield background -->

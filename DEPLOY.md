@@ -163,3 +163,8 @@ This runs the functions locally at `http://localhost:8888`
 
 Check function logs: Netlify Dashboard → Functions → [function name] → Recent logs
 
+
+
+
+
+
