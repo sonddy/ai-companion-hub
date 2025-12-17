@@ -91,17 +91,22 @@
     .back-btn {
       position: fixed;
       top: 20px;
-      right: 420px;
+      right: 20px;
       padding: 10px 20px;
       background: rgba(153, 102, 255, 0.2);
-      border: 1px solid var(--accent);
+      border: 1px solid rgba(153, 102, 255, 0.4);
+      border-radius: 25px;
       color: var(--accent);
-      border-radius: 8px;
       text-decoration: none;
       font-size: 14px;
-      z-index: 100;
+      font-weight: 500;
+      z-index: 200;
+      transition: all 0.3s ease;
     }
-    .back-btn:hover { background: rgba(153, 102, 255, 0.3); }
+    .back-btn:hover {
+      background: rgba(153, 102, 255, 0.3);
+      transform: translateX(-5px);
+    }
     
     /* Chat Interface */
     .chat-interface {
@@ -249,7 +254,7 @@
         max-height: 50vh;
       }
       .title-overlay h1 { font-size: 32px; }
-      .back-btn { right: auto; left: 20px; top: 80px; }
+      .back-btn { top: 15px; right: 15px; }
     }
 
     /* Radio Widget */
