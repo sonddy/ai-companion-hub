@@ -455,25 +455,30 @@
       color: var(--muted);
       font-size: 12px;
     }
-      /* Mobile Radio Widget */
-    @media (max-width: 768px) {
+      /* Mobile Radio Widget - Below Chat */
+    @media (max-width: 900px) {
+      .chat-interface {
+        bottom: 140px;
+        max-height: 40vh;
+      }
       .radio-widget {
-        bottom: auto;
-        top: 60px;
+        bottom: 10px;
+        top: auto;
         left: 10px;
-        right: auto;
-        min-width: 200px;
-        max-width: calc(100vw - 100px);
+        right: 10px;
+        min-width: auto;
+        max-width: none;
       }
     }
     @media (max-width: 480px) {
+      .chat-interface {
+        bottom: 130px;
+        max-height: 35vh;
+      }
       .radio-widget {
-        bottom: auto;
-        top: 60px;
+        bottom: 8px;
         left: 8px;
-        right: auto;
-        min-width: 180px;
-        max-width: calc(100vw - 100px);
+        right: 8px;
         padding: 10px 12px;
       }
       .radio-name {
@@ -1340,4 +1345,5 @@
   </div>
 </body>
 </html>
+
 
