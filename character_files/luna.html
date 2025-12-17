@@ -511,6 +511,98 @@
       color: var(--muted);
       font-size: 12px;
     }
+    .radio-mobile-notice {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-align: center;
+      padding: 8px;
+      background: rgba(255, 107, 157, 0.1);
+      border-radius: 8px;
+      margin-top: 10px;
+      display: none;
+    }
+    
+    /* Radio Widget Mobile Responsive */
+    @media (max-width: 768px) {
+      .radio-widget {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        min-width: auto;
+        max-width: none;
+        padding: 12px 15px;
+        border-radius: 15px;
+      }
+      .radio-header {
+        margin-bottom: 8px;
+      }
+      .radio-icon {
+        font-size: 1.2rem;
+      }
+      .radio-name {
+        font-size: 0.8rem;
+      }
+      .radio-host {
+        font-size: 0.6rem;
+      }
+      .radio-live {
+        font-size: 0.55rem;
+      }
+      .radio-visualizer {
+        height: 25px;
+        margin-bottom: 8px;
+        gap: 2px;
+      }
+      .radio-bar {
+        width: 3px;
+      }
+      .radio-text {
+        font-size: 0.65rem;
+        margin-bottom: 8px;
+        max-height: 35px;
+      }
+      .radio-controls {
+        gap: 12px;
+      }
+      .radio-play-btn {
+        width: 40px;
+        height: 40px;
+      }
+      .radio-play-btn svg {
+        width: 16px;
+        height: 16px;
+      }
+      .radio-skip-btn {
+        width: 30px;
+        height: 30px;
+      }
+      .radio-skip-btn svg {
+        width: 12px;
+        height: 12px;
+      }
+      .radio-volume {
+        margin-top: 8px;
+        padding-top: 8px;
+      }
+      .radio-mobile-notice {
+        display: block;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .radio-widget {
+        bottom: 8px;
+        left: 8px;
+        right: 8px;
+        padding: 10px 12px;
+      }
+      .radio-name {
+        font-size: 0.75rem;
+      }
+      .radio-visualizer {
+        height: 20px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1515,7 +1607,10 @@
         startRadioVisualizer();
       } catch (err) {
         console.error('Radio error:', err);
-        radioText.textContent = 'Oh no! Make sure the radio server is running!';
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        radioText.textContent = isMobile 
+          ? '📱 Radio needs the local server - try on desktop!' 
+          : 'Start the radio server: python -m uvicorn server.luna_radio_proxy:app --port 8012';
         radioPlaying = false;
         radioPlayBtn.classList.remove('playing');
         isTalking = false;
@@ -1602,6 +1697,9 @@
     <div class="radio-volume">
       <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
       <input type="range" class="radio-volume-slider" id="radioVolume" min="0" max="100" value="70">
+    </div>
+    <div class="radio-mobile-notice">
+      📱 Radio requires local server (desktop only)
     </div>
   </div>
 </body>
