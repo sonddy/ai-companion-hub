@@ -568,6 +568,14 @@
             }
           });
           
+          // Set arms down immediately
+          if (vrm.humanoid) {
+            const leftUpperArm = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
+            const rightUpperArm = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+            if (leftUpperArm) leftUpperArm.rotation.z = 1.2;
+            if (rightUpperArm) rightUpperArm.rotation.z = -1.2;
+          }
+          
           scene.add(vrm.scene);
           document.getElementById('loadingOverlay').classList.add('hidden');
         },
@@ -629,14 +637,23 @@
     }
 
     function updateBodyMovement(delta) {
-      if (!vrm) return;
+      if (!vrm || !vrm.humanoid) return;
       
       breathTimer += delta;
       bodySwayTimer += delta;
+      const time = bodySwayTimer;
       
-      const spine = vrm.humanoid?.getNormalizedBoneNode('spine');
-      const chest = vrm.humanoid?.getNormalizedBoneNode('chest');
-      const head = vrm.humanoid?.getNormalizedBoneNode('head');
+      const spine = vrm.humanoid.getNormalizedBoneNode('spine');
+      const chest = vrm.humanoid.getNormalizedBoneNode('chest');
+      const head = vrm.humanoid.getNormalizedBoneNode('head');
+      const leftUpperArm = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
+      const rightUpperArm = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+      const leftLowerArm = vrm.humanoid.getNormalizedBoneNode('leftLowerArm');
+      const rightLowerArm = vrm.humanoid.getNormalizedBoneNode('rightLowerArm');
+      const leftHand = vrm.humanoid.getNormalizedBoneNode('leftHand');
+      const rightHand = vrm.humanoid.getNormalizedBoneNode('rightHand');
+      const leftShoulder = vrm.humanoid.getNormalizedBoneNode('leftShoulder');
+      const rightShoulder = vrm.humanoid.getNormalizedBoneNode('rightShoulder');
       
       // Breathing
       const breathAmount = Math.sin(breathTimer * 1.5) * 0.008;
@@ -661,6 +678,66 @@
         }
         if (spine) {
           spine.rotation.z += Math.sin(bodySwayTimer * 1.8) * 0.015;
+        }
+        
+        // Shoulder movement while talking
+        if (leftShoulder) {
+          leftShoulder.rotation.z = Math.sin(time * 2.0) * 0.08;
+        }
+        if (rightShoulder) {
+          rightShoulder.rotation.z = -Math.sin(time * 2.0 + 0.5) * 0.08;
+        }
+        
+        // Expressive arm movement while talking (arms stay down)
+        if (leftUpperArm) {
+          leftUpperArm.rotation.z = 1.2 + Math.sin(time * 1.5) * 0.15;
+          leftUpperArm.rotation.x = Math.sin(time * 1.2) * 0.1;
+        }
+        if (rightUpperArm) {
+          rightUpperArm.rotation.z = -1.2 - Math.sin(time * 1.8) * 0.15;
+          rightUpperArm.rotation.x = Math.sin(time * 1.2 + 0.5) * 0.1;
+        }
+        if (leftLowerArm) {
+          leftLowerArm.rotation.y = Math.sin(time * 2.5) * 0.15;
+        }
+        if (rightLowerArm) {
+          rightLowerArm.rotation.y = -Math.sin(time * 2.5 + 0.5) * 0.15;
+        }
+        if (leftHand) {
+          leftHand.rotation.z = Math.sin(time * 3) * 0.12;
+        }
+        if (rightHand) {
+          rightHand.rotation.z = -Math.sin(time * 3 + 0.3) * 0.12;
+        }
+      } else {
+        // Subtle idle arm movement (arms stay down)
+        if (leftUpperArm) {
+          leftUpperArm.rotation.z = THREE.MathUtils.lerp(leftUpperArm.rotation.z, 1.2 + Math.sin(time * 0.4) * 0.03, delta * 2);
+          leftUpperArm.rotation.x = THREE.MathUtils.lerp(leftUpperArm.rotation.x, Math.sin(time * 0.35) * 0.02, delta * 2);
+        }
+        if (rightUpperArm) {
+          rightUpperArm.rotation.z = THREE.MathUtils.lerp(rightUpperArm.rotation.z, -1.2 - Math.sin(time * 0.4 + 0.5) * 0.03, delta * 2);
+          rightUpperArm.rotation.x = THREE.MathUtils.lerp(rightUpperArm.rotation.x, Math.sin(time * 0.35 + 0.5) * 0.02, delta * 2);
+        }
+        if (leftLowerArm) {
+          leftLowerArm.rotation.y = THREE.MathUtils.lerp(leftLowerArm.rotation.y, Math.sin(time * 0.45) * 0.03, delta * 2);
+        }
+        if (rightLowerArm) {
+          rightLowerArm.rotation.y = THREE.MathUtils.lerp(rightLowerArm.rotation.y, -Math.sin(time * 0.45) * 0.03, delta * 2);
+        }
+        if (leftHand) {
+          leftHand.rotation.z = THREE.MathUtils.lerp(leftHand.rotation.z, Math.sin(time * 0.5) * 0.04, delta * 2);
+        }
+        if (rightHand) {
+          rightHand.rotation.z = THREE.MathUtils.lerp(rightHand.rotation.z, -Math.sin(time * 0.5) * 0.04, delta * 2);
+        }
+        
+        // Subtle shoulder breathing
+        if (leftShoulder) {
+          leftShoulder.rotation.z = THREE.MathUtils.lerp(leftShoulder.rotation.z, Math.sin(time * 1.5) * 0.02, delta * 2);
+        }
+        if (rightShoulder) {
+          rightShoulder.rotation.z = THREE.MathUtils.lerp(rightShoulder.rotation.z, -Math.sin(time * 1.5) * 0.02, delta * 2);
         }
       }
     }
