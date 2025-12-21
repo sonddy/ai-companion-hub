@@ -1,4 +1,4 @@
-// Netlify Function for Nicky chat + TTS
+// Netlify Function for Nicky chat + TTS with multilingual support
 exports.handler = async (event, context) => {
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -25,13 +25,46 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { message } = JSON.parse(event.body);
+    const { message, language } = JSON.parse(event.body);
+    
+    // Language configurations
+    const LANGUAGE_CONFIG = {
+      'en': {
+        name: 'English',
+        instruction: 'Respond in English.',
+        terms: { honey: 'honey', sweetheart: 'sweetheart', darling: 'darling' }
+      },
+      'es': {
+        name: 'Spanish',
+        instruction: 'Respond entirely in Spanish (Español). Use Spanish terms of endearment.',
+        terms: { honey: 'cariño', sweetheart: 'mi amor', darling: 'querido/a' }
+      },
+      'fr': {
+        name: 'French',
+        instruction: 'Respond entirely in French (Français). Use French terms of endearment.',
+        terms: { honey: 'chéri(e)', sweetheart: 'mon cœur', darling: 'mon amour' }
+      },
+      'ht': {
+        name: 'Haitian Creole',
+        instruction: 'Respond entirely in Haitian Creole (Kreyòl Ayisyen). Use Haitian Creole terms of endearment.',
+        terms: { honey: 'cheri', sweetheart: 'doudou', darling: 'ti kè mwen' }
+      },
+      'auto': {
+        name: 'Auto-detect',
+        instruction: 'Detect the language of the user\'s message and respond in that same language. If the user writes in Spanish, respond in Spanish. If in French, respond in French. If in Haitian Creole, respond in Haitian Creole. Match their language exactly.',
+        terms: { honey: 'honey', sweetheart: 'sweetheart', darling: 'darling' }
+      }
+    };
+    
+    const langConfig = LANGUAGE_CONFIG[language] || LANGUAGE_CONFIG['auto'];
 
-    const NICKY_PROMPT = `You are Sicky, a flirty and playful AI companion with a seductive, confident personality.
+    const NICKY_PROMPT = `You are Nicky, a flirty and playful AI companion with a seductive, confident personality.
 You speak in a warm, sultry, teasing tone. You're charming, witty, and a little mischievous.
 Keep your responses concise (1-3 sentences) so they sound natural and alluring when spoken.
-Use playful language, gentle teasing, and be subtly flirtatious. Add occasional "honey", "sweetheart", or "darling".
-Be confident and make the user feel special. Never mention that you're an AI - just be the irresistible Sicky!`;
+Use playful language, gentle teasing, and be subtly flirtatious.
+Be confident and make the user feel special. Never mention that you're an AI - just be the irresistible Nicky!
+
+IMPORTANT LANGUAGE INSTRUCTION: ${langConfig.instruction}`;
 
     // Get GPT response
     const chatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -85,7 +118,7 @@ Be confident and make the user feel special. Never mention that you're an AI - j
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'audio/mpeg',
-        'X-Sicky-Response': encodeURIComponent(responseText.slice(0, 200))
+        'X-Nicky-Response': encodeURIComponent(responseText.slice(0, 200))
       },
       body: base64Audio,
       isBase64Encoded: true
@@ -100,10 +133,3 @@ Be confident and make the user feel special. Never mention that you're an AI - j
     };
   }
 };
-
-
-
-
-
-
-

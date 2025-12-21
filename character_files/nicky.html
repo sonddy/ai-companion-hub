@@ -255,6 +255,8 @@
       display: flex;
       gap: 10px;
       justify-content: center;
+      flex-wrap: wrap;
+      align-items: center;
     }
     .chat-controls button {
       background: rgba(255, 255, 255, 0.1);
@@ -262,6 +264,44 @@
       box-shadow: none;
       padding: 8px 16px;
       font-size: 12px;
+    }
+    
+    /* Language Selector */
+    .language-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: rgba(255, 107, 157, 0.1);
+      border: 1px solid rgba(255, 107, 157, 0.3);
+      border-radius: 20px;
+    }
+    .language-selector label {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.7);
+      white-space: nowrap;
+    }
+    .language-selector select {
+      background: rgba(13, 13, 26, 0.9);
+      border: 1px solid rgba(255, 107, 157, 0.4);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      outline: none;
+      font-family: inherit;
+    }
+    .language-selector select:hover {
+      border-color: rgba(255, 107, 157, 0.6);
+    }
+    .language-selector select:focus {
+      border-color: #ff6b9d;
+      box-shadow: 0 0 10px rgba(255, 107, 157, 0.3);
+    }
+    .language-selector select option {
+      background: #0d0d1a;
+      color: var(--text);
     }
     .mic-btn {
       padding: 12px 16px;
@@ -687,6 +727,16 @@
       <div class="chat-controls">
         <button id="stopBtn">Stop</button>
         <button id="clearBtn">Clear</button>
+        <div class="language-selector">
+          <label>🌍</label>
+          <select id="languageSelect">
+            <option value="auto">Auto-detect</option>
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+            <option value="ht">Kreyòl Ayisyen</option>
+          </select>
+        </div>
       </div>
     </div>
   </div>
@@ -717,6 +767,12 @@
     const clearBtn = document.getElementById('clearBtn');
     const statusEl = document.getElementById('status');
     const player = document.getElementById('player');
+    const languageSelect = document.getElementById('languageSelect');
+    
+    // Get selected language
+    function getSelectedLanguage() {
+      return languageSelect ? languageSelect.value : 'auto';
+    }
     
     // Three.js setup
     const scene = new THREE.Scene();
@@ -1271,12 +1327,12 @@
         const res = await fetch(CHAT_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text })
+          body: JSON.stringify({ message: text, language: getSelectedLanguage() })
         });
         
         if (!res.ok) throw new Error(`Server error: ${res.status}`);
         
-        const rawResponse = res.headers.get('X-Sicky-Response') || '...';
+        const rawResponse = res.headers.get('X-Nicky-Response') || '...';
         const responseText = decodeURIComponent(rawResponse);
         addMessage(responseText, 'nicky');
 
@@ -1499,12 +1555,12 @@
         const res = await fetch(CHAT_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: `[The user just touched you. React flirtatiously in 1-2 short sentences. Be playful and teasing.]` })
+          body: JSON.stringify({ message: `[The user just touched you. React flirtatiously in 1-2 short sentences. Be playful and teasing.]`, language: getSelectedLanguage() })
         });
         
         if (!res.ok) throw new Error('Server error');
         
-        const rawResponse = res.headers.get('X-Sicky-Response') || phrase;
+        const rawResponse = res.headers.get('X-Nicky-Response') || phrase;
         const responseText = decodeURIComponent(rawResponse);
         addMessage(responseText, 'nicky');
 
@@ -1714,10 +1770,14 @@
       fadeInBgMusic();
 
       try {
+        // Get language (radio uses explicit language, not auto-detect)
+        const lang = getSelectedLanguage();
+        const radioLang = lang === 'auto' ? 'en' : lang;
+        
         const res = await fetch(NICKY_RADIO_API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({})
+          body: JSON.stringify({ language: radioLang })
         });
 
         if (!res.ok) throw new Error('Failed to load');

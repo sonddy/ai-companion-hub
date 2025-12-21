@@ -231,6 +231,8 @@
       display: flex;
       gap: 10px;
       justify-content: center;
+      flex-wrap: wrap;
+      align-items: center;
     }
     .chat-controls button {
       background: rgba(153, 102, 255, 0.1);
@@ -238,6 +240,44 @@
       padding: 8px 16px;
       font-size: 11px;
       border: 1px solid rgba(153, 102, 255, 0.3);
+    }
+    
+    /* Language Selector */
+    .language-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: rgba(153, 102, 255, 0.1);
+      border: 1px solid rgba(153, 102, 255, 0.3);
+      border-radius: 20px;
+    }
+    .language-selector label {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.7);
+      white-space: nowrap;
+    }
+    .language-selector select {
+      background: rgba(10, 10, 20, 0.9);
+      border: 1px solid rgba(153, 102, 255, 0.4);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      outline: none;
+      font-family: inherit;
+    }
+    .language-selector select:hover {
+      border-color: rgba(153, 102, 255, 0.6);
+    }
+    .language-selector select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 10px rgba(153, 102, 255, 0.3);
+    }
+    .language-selector select option {
+      background: #0a0a14;
+      color: var(--text);
     }
     .chat-messages::-webkit-scrollbar { width: 6px; }
     .chat-messages::-webkit-scrollbar-track { background: rgba(153, 102, 255, 0.1); border-radius: 3px; }
@@ -572,6 +612,16 @@
       <div class="chat-controls">
         <button id="stopBtn">Stop</button>
         <button id="clearBtn">Clear</button>
+        <div class="language-selector">
+          <label>🌍</label>
+          <select id="languageSelect">
+            <option value="auto">Auto-detect</option>
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+            <option value="ht">Kreyòl Ayisyen</option>
+          </select>
+        </div>
       </div>
     </div>
   </div>
@@ -600,6 +650,12 @@
     const clearBtn = document.getElementById('clearBtn');
     const statusEl = document.getElementById('status');
     const player = document.getElementById('player');
+    const languageSelect = document.getElementById('languageSelect');
+    
+    // Get selected language
+    function getSelectedLanguage() {
+      return languageSelect ? languageSelect.value : 'auto';
+    }
     
     // Three.js setup - Mystical cosmic theme
     const scene = new THREE.Scene();
@@ -963,7 +1019,7 @@
         const res = await fetch(CHAT_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text })
+          body: JSON.stringify({ message: text, language: getSelectedLanguage() })
         });
         
         if (!res.ok) throw new Error(`Server error: ${res.status}`);
@@ -1086,7 +1142,7 @@
         const res = await fetch(CHAT_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: '[User got your attention. Give a brief mystical greeting in 1 sentence.]' })
+          body: JSON.stringify({ message: '[User got your attention. Give a brief mystical greeting in 1 sentence.]', language: getSelectedLanguage() })
         });
         
         if (res.ok) {
@@ -1274,10 +1330,14 @@
       fadeInDebussy();
 
       try {
+        // Get language (radio uses explicit language, not auto-detect)
+        const lang = getSelectedLanguage();
+        const radioLang = lang === 'auto' ? 'en' : lang;
+        
         const res = await fetch(ORACLE_RADIO_API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({})
+          body: JSON.stringify({ language: radioLang })
         });
 
         if (!res.ok) throw new Error('Failed to load');

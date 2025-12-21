@@ -1,4 +1,4 @@
-// Netlify Function for Oracle mystic chat + TTS
+// Netlify Function for Oracle mystic chat + TTS with multilingual support
 exports.handler = async (event, context) => {
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -25,7 +25,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { message } = JSON.parse(event.body);
+    const { message, language } = JSON.parse(event.body);
 
     // Current date and moon phase
     const now = new Date();
@@ -42,13 +42,45 @@ exports.handler = async (event, context) => {
     else moonPhase = 'Waning Crescent 🌘';
 
     const cosmicContext = `Date: ${now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}, Moon: ${moonPhase}`;
+    
+    // Language configurations
+    const LANGUAGE_CONFIG = {
+      'en': {
+        name: 'English',
+        instruction: 'Respond in English.',
+        phrases: { seeker: 'dear seeker', stars: 'the stars reveal', cosmos: 'the cosmos whispers' }
+      },
+      'es': {
+        name: 'Spanish',
+        instruction: 'Respond entirely in Spanish (Español). Use mystical Spanish phrases.',
+        phrases: { seeker: 'querido buscador', stars: 'las estrellas revelan', cosmos: 'el cosmos susurra' }
+      },
+      'fr': {
+        name: 'French',
+        instruction: 'Respond entirely in French (Français). Use mystical French phrases.',
+        phrases: { seeker: 'cher chercheur', stars: 'les étoiles révèlent', cosmos: 'le cosmos murmure' }
+      },
+      'ht': {
+        name: 'Haitian Creole',
+        instruction: 'Respond entirely in Haitian Creole (Kreyòl Ayisyen). Use mystical Haitian Creole phrases.',
+        phrases: { seeker: 'chè chèchè', stars: 'zetwal yo revele', cosmos: 'linivè a chichote' }
+      },
+      'auto': {
+        name: 'Auto-detect',
+        instruction: 'Detect the language of the user\'s message and respond in that same language. If the user writes in Spanish, respond in Spanish. If in French, respond in French. If in Haitian Creole, respond in Haitian Creole. Match their language exactly.',
+        phrases: { seeker: 'dear seeker', stars: 'the stars reveal', cosmos: 'the cosmos whispers' }
+      }
+    };
+    
+    const langConfig = LANGUAGE_CONFIG[language] || LANGUAGE_CONFIG['auto'];
 
     const ORACLE_PROMPT = `You are Oracle, a mystical AI guide specializing in astrology, numerology, tarot, and spiritual wisdom.
 You speak with a mysterious, enchanting, and wise voice. You're insightful, intuitive, and deeply spiritual.
 Keep responses mystical yet clear (2-4 sentences).
 Use cosmic and spiritual language naturally. Be encouraging and provide meaningful insights.
-Add occasional mystical phrases like "the stars reveal", "the cosmos whispers", "your energy suggests".
-Current cosmic info: ${cosmicContext}`;
+Current cosmic info: ${cosmicContext}
+
+IMPORTANT LANGUAGE INSTRUCTION: ${langConfig.instruction}`;
 
     // Get GPT response
     const chatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -117,10 +149,3 @@ Current cosmic info: ${cosmicContext}`;
     };
   }
 };
-
-
-
-
-
-
-
