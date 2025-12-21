@@ -798,11 +798,20 @@
     };
 
     window.connectToStream = async function() {
-      const username = document.getElementById('tiktokUsername').value.replace('@', '');
+      const username = document.getElementById('tiktokUsername').value.replace('@', '').trim();
       if (!username) {
         alert('Please enter a TikTok username');
         return;
       }
+      
+      const statusDot = document.getElementById('statusDot');
+      const statusText = document.getElementById('statusText');
+      const connectBtn = document.getElementById('connectBtn');
+      
+      // Show connecting state
+      statusText.textContent = 'Connecting...';
+      connectBtn.textContent = '🔄 Connecting...';
+      connectBtn.disabled = true;
       
       try {
         const response = await fetch(`${API_BASE}/connect`, {
@@ -812,17 +821,36 @@
         });
         
         const data = await response.json();
+        console.log('Connection response:', data);
         
-        if (data.status === 'connected_simulation' || data.status === 'connecting') {
-          document.getElementById('statusDot').classList.add('connected');
-          document.getElementById('statusText').textContent = 'Connected';
-          document.getElementById('connectBtn').textContent = '✅ Connected';
+        if (data.status === 'connected' || data.status === 'connecting' || data.status === 'simulation_mode') {
+          statusDot.classList.add('connected');
+          statusText.textContent = data.tiktok_available === false ? 'Simulation Mode' : 'Connected';
+          connectBtn.textContent = '✅ Connected';
+          
+          if (data.status === 'simulation_mode') {
+            alert('Running in Simulation Mode - TikTokLive library not installed.\n\nUse "Add Test Question" to manually add questions for testing.');
+          }
+        } else if (data.status === 'already_connected') {
+          statusDot.classList.add('connected');
+          statusText.textContent = 'Connected';
+          connectBtn.textContent = '✅ Connected';
+        } else if (data.status === 'error') {
+          statusDot.classList.remove('connected');
+          statusText.textContent = 'Error';
+          connectBtn.textContent = '❌ Failed';
+          alert('Connection failed: ' + (data.message || 'Unknown error'));
         }
         
         updateQueueInfo();
       } catch (error) {
         console.error('Connection error:', error);
-        alert('Failed to connect. Make sure the TikTok Live service is running.');
+        statusDot.classList.remove('connected');
+        statusText.textContent = 'Disconnected';
+        connectBtn.textContent = '🔗 Connect';
+        alert('Failed to connect. Make sure the TikTok Live service is running on port 8020.\n\nRun: uvicorn server.tiktok_live_service:app --port 8020');
+      } finally {
+        connectBtn.disabled = false;
       }
     };
 

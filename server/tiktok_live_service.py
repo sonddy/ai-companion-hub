@@ -19,6 +19,7 @@ import os
 import asyncio
 import random
 import time
+import threading
 from typing import Optional, List, Dict
 from collections import deque
 from datetime import datetime
@@ -73,40 +74,49 @@ class QuestionQueue:
         self.is_connected: bool = False
         self.stream_username: str = ""
         self.connection_time: Optional[datetime] = None
+        self.error_message: str = ""
+        self.tiktok_available: bool = False
+        self._lock = threading.Lock()
     
     def add_question(self, username: str, question: str):
         """Add a question from a viewer."""
-        self.questions.append({
-            "id": f"{time.time()}_{random.randint(1000, 9999)}",
-            "username": username,
-            "question": question,
-            "timestamp": datetime.now().isoformat(),
-        })
+        with self._lock:
+            self.questions.append({
+                "id": f"{time.time()}_{random.randint(1000, 9999)}",
+                "username": username,
+                "question": question,
+                "timestamp": datetime.now().isoformat(),
+            })
+            print(f"📩 Question added from @{username}: {question}")
     
     def pick_random(self) -> Optional[Dict]:
         """Pick and remove a random question."""
-        if not self.questions:
-            return None
-        idx = random.randint(0, len(self.questions) - 1)
-        question = self.questions[idx]
-        del self.questions[idx]
-        self.answered.append(question)
-        return question
+        with self._lock:
+            if not self.questions:
+                return None
+            idx = random.randint(0, len(self.questions) - 1)
+            question = self.questions[idx]
+            del self.questions[idx]
+            self.answered.append(question)
+            return question
     
     def get_all(self) -> List[Dict]:
         """Get all pending questions."""
-        return list(self.questions)
+        with self._lock:
+            return list(self.questions)
     
     def clear(self):
         """Clear all questions."""
-        self.questions.clear()
+        with self._lock:
+            self.questions.clear()
 
 
 # Global queue instance
 question_queue = QuestionQueue()
 
-# TikTok client (optional - for when TikTokLive is installed)
+# TikTok client reference
 tiktok_client = None
+tiktok_thread = None
 
 
 class ConnectRequest(BaseModel):
@@ -209,88 +219,159 @@ def text_to_speech(text: str, character: str) -> bytes:
         raise HTTPException(status_code=502, detail=f"TTS error: {str(exc)}")
 
 
-@app.post("/connect")
-async def connect_to_stream(body: ConnectRequest, background_tasks: BackgroundTasks):
-    """Connect to a TikTok live stream and start collecting questions."""
+def run_tiktok_client_in_thread(username: str):
+    """Run the TikTok client in a separate thread with its own event loop."""
     global tiktok_client
     
-    # Check if TikTokLive is available
     try:
         from TikTokLive import TikTokLiveClient
-        from TikTokLive.events import CommentEvent, ConnectEvent, DisconnectEvent
-    except ImportError:
-        # TikTokLive not installed - use simulation mode
-        question_queue.is_connected = True
-        question_queue.stream_username = body.username
-        question_queue.connection_time = datetime.now()
+        from TikTokLive.events import ConnectEvent, DisconnectEvent, CommentEvent
+        
+        question_queue.tiktok_available = True
+        
+        # Create a new event loop for this thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        # Create TikTok client
+        client = TikTokLiveClient(unique_id=username)
+        tiktok_client = client
+        
+        @client.on(ConnectEvent)
+        async def on_connect(event: ConnectEvent):
+            question_queue.is_connected = True
+            question_queue.connection_time = datetime.now()
+            question_queue.error_message = ""
+            print(f"✅ Connected to @{username}'s TikTok live stream!")
+        
+        @client.on(DisconnectEvent)
+        async def on_disconnect(event: DisconnectEvent):
+            question_queue.is_connected = False
+            print(f"❌ Disconnected from @{username}'s TikTok live stream")
+        
+        @client.on(CommentEvent)
+        async def on_comment(event: CommentEvent):
+            comment = event.comment
+            viewer_name = event.user.nickname or event.user.unique_id or "Anonymous"
+            
+            # Check if it looks like a question or is interesting
+            is_question = (
+                "?" in comment or 
+                any(q in comment.lower() for q in [
+                    "what", "how", "why", "when", "where", "who", 
+                    "can", "do", "is", "are", "will", "would", "should",
+                    "tell me", "explain", "help", "advice"
+                ])
+            )
+            
+            if is_question:
+                question_queue.add_question(viewer_name, comment)
+        
+        # Run the client
+        print(f"🔄 Attempting to connect to @{username}'s TikTok live...")
+        loop.run_until_complete(client.start())
+        
+    except ImportError as e:
+        question_queue.tiktok_available = False
+        question_queue.error_message = "TikTokLive library not installed. Install with: pip install TikTokLive"
+        print(f"❌ TikTokLive not installed: {e}")
+    except Exception as e:
+        question_queue.is_connected = False
+        question_queue.error_message = str(e)
+        print(f"❌ TikTok connection error: {e}")
+
+
+@app.post("/connect")
+def connect_to_stream(body: ConnectRequest):
+    """Connect to a TikTok live stream and start collecting questions."""
+    global tiktok_client, tiktok_thread
+    
+    username = body.username.replace("@", "").strip()
+    
+    if not username:
+        raise HTTPException(status_code=400, detail="Username is required")
+    
+    # Check if already connected
+    if question_queue.is_connected:
         return {
-            "status": "connected_simulation",
-            "message": f"Simulation mode - TikTokLive not installed. Use /add-question to simulate.",
-            "username": body.username,
+            "status": "already_connected", 
+            "username": question_queue.stream_username,
+            "message": f"Already connected to @{question_queue.stream_username}"
         }
     
-    if question_queue.is_connected:
-        return {"status": "already_connected", "username": question_queue.stream_username}
-    
+    # Clear previous state
     question_queue.clear()
-    question_queue.stream_username = body.username
+    question_queue.stream_username = username
+    question_queue.error_message = ""
     
-    # Create TikTok client
-    tiktok_client = TikTokLiveClient(unique_id=body.username)
-    
-    @tiktok_client.on(ConnectEvent)
-    async def on_connect(event: ConnectEvent):
-        question_queue.is_connected = True
+    # Try to import TikTokLive to check availability
+    try:
+        from TikTokLive import TikTokLiveClient
+        question_queue.tiktok_available = True
+    except ImportError:
+        question_queue.tiktok_available = False
+        question_queue.is_connected = True  # Simulation mode
         question_queue.connection_time = datetime.now()
-        print(f"✅ Connected to @{body.username}'s live stream!")
+        return {
+            "status": "simulation_mode",
+            "message": "TikTokLive not installed. Running in simulation mode. Use 'Add Test Question' to add questions manually.",
+            "username": username,
+            "tiktok_available": False
+        }
     
-    @tiktok_client.on(DisconnectEvent)
-    async def on_disconnect(event: DisconnectEvent):
-        question_queue.is_connected = False
-        print(f"❌ Disconnected from @{body.username}'s live stream")
+    # Stop existing thread if any
+    if tiktok_thread and tiktok_thread.is_alive():
+        if tiktok_client:
+            try:
+                asyncio.run(tiktok_client.stop())
+            except:
+                pass
     
-    @tiktok_client.on(CommentEvent)
-    async def on_comment(event: CommentEvent):
-        comment = event.comment
-        # Check if it looks like a question
-        if "?" in comment or any(q in comment.lower() for q in ["what", "how", "why", "when", "where", "who", "can", "do", "is", "are"]):
-            question_queue.add_question(event.user.nickname or event.user.unique_id, comment)
-            print(f"📩 Question from @{event.user.nickname}: {comment}")
+    # Start TikTok client in a new thread
+    tiktok_thread = threading.Thread(target=run_tiktok_client_in_thread, args=(username,), daemon=True)
+    tiktok_thread.start()
     
-    # Start connection in background
-    async def start_client():
-        try:
-            await tiktok_client.start()
-        except Exception as e:
-            print(f"TikTok connection error: {e}")
-            question_queue.is_connected = False
+    # Wait a moment for connection
+    time.sleep(2)
     
-    background_tasks.add_task(lambda: asyncio.create_task(start_client()))
+    if question_queue.error_message:
+        return {
+            "status": "error",
+            "message": question_queue.error_message,
+            "username": username,
+            "tiktok_available": True
+        }
     
     return {
-        "status": "connecting",
-        "message": f"Connecting to @{body.username}'s live stream...",
-        "username": body.username,
+        "status": "connecting" if not question_queue.is_connected else "connected",
+        "message": f"{'Connected' if question_queue.is_connected else 'Connecting'} to @{username}'s TikTok live stream...",
+        "username": username,
+        "tiktok_available": True
     }
 
 
 @app.post("/disconnect")
-async def disconnect_from_stream():
+def disconnect_from_stream():
     """Disconnect from the current TikTok stream."""
     global tiktok_client
     
     if tiktok_client:
         try:
-            await tiktok_client.stop()
-        except:
-            pass
+            # Create a new loop to stop the client
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(tiktok_client.stop())
+            loop.close()
+        except Exception as e:
+            print(f"Error stopping TikTok client: {e}")
         tiktok_client = None
     
     question_queue.is_connected = False
     question_queue.stream_username = ""
     question_queue.connection_time = None
+    question_queue.error_message = ""
     
-    return {"status": "disconnected"}
+    return {"status": "disconnected", "message": "Disconnected from TikTok live stream"}
 
 
 @app.post("/add-question")
@@ -300,6 +381,7 @@ def add_question(body: SimulateQuestionRequest):
     return {
         "status": "added",
         "queue_size": len(question_queue.questions),
+        "message": f"Question from @{body.username} added to queue"
     }
 
 
@@ -310,6 +392,7 @@ def get_questions():
         "questions": question_queue.get_all(),
         "count": len(question_queue.questions),
         "is_connected": question_queue.is_connected,
+        "tiktok_available": question_queue.tiktok_available,
     }
 
 
@@ -380,14 +463,26 @@ def get_status():
         "connection_time": question_queue.connection_time.isoformat() if question_queue.connection_time else None,
         "questions_pending": len(question_queue.questions),
         "questions_answered": len(question_queue.answered),
+        "tiktok_available": question_queue.tiktok_available,
+        "error_message": question_queue.error_message,
     }
 
 
 @app.get("/health")
 def health():
+    """Health check endpoint."""
+    # Check TikTokLive availability
+    try:
+        from TikTokLive import TikTokLiveClient
+        tiktok_installed = True
+    except ImportError:
+        tiktok_installed = False
+    
     return {
         "status": "ok",
         "service": "TikTok Live Integration",
         "characters": list(CHARACTERS.keys()),
+        "tiktok_installed": tiktok_installed,
+        "is_connected": question_queue.is_connected,
+        "queue_size": len(question_queue.questions),
     }
-
