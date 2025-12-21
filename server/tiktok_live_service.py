@@ -87,7 +87,7 @@ class QuestionQueue:
                 "question": question,
                 "timestamp": datetime.now().isoformat(),
             })
-            print(f"📩 Question added from @{username}: {question}")
+            print(f"[QUESTION] Added from @{username}: {question}")
     
     def pick_random(self) -> Optional[Dict]:
         """Pick and remove a random question."""
@@ -242,12 +242,12 @@ def run_tiktok_client_in_thread(username: str):
             question_queue.is_connected = True
             question_queue.connection_time = datetime.now()
             question_queue.error_message = ""
-            print(f"✅ Connected to @{username}'s TikTok live stream!")
+            print(f"[CONNECTED] Connected to @{username}'s TikTok live stream!")
         
         @client.on(DisconnectEvent)
         async def on_disconnect(event: DisconnectEvent):
             question_queue.is_connected = False
-            print(f"❌ Disconnected from @{username}'s TikTok live stream")
+            print(f"[DISCONNECTED] Disconnected from @{username}'s TikTok live stream")
         
         @client.on(CommentEvent)
         async def on_comment(event: CommentEvent):
@@ -268,17 +268,17 @@ def run_tiktok_client_in_thread(username: str):
                 question_queue.add_question(viewer_name, comment)
         
         # Run the client
-        print(f"🔄 Attempting to connect to @{username}'s TikTok live...")
+        print(f"[CONNECTING] Attempting to connect to @{username}'s TikTok live...")
         loop.run_until_complete(client.start())
         
     except ImportError as e:
         question_queue.tiktok_available = False
         question_queue.error_message = "TikTokLive library not installed. Install with: pip install TikTokLive"
-        print(f"❌ TikTokLive not installed: {e}")
+        print(f"[ERROR] TikTokLive not installed: {e}")
     except Exception as e:
         question_queue.is_connected = False
         question_queue.error_message = str(e)
-        print(f"❌ TikTok connection error: {e}")
+        print(f"[ERROR] TikTok connection error: {e}")
 
 
 @app.post("/connect")
